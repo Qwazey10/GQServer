@@ -1,41 +1,44 @@
 #include <iostream>
-#include <NetworkSocketMgr/NetworkSocketMgr.h>
-#include <asio.hpp>
+#include <thread>
+#include "src/NetworkSocketMgr/NetworkSocketMgr.h"
+#include "src/World/World.h"
 
-// TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 int main() {
-    // Create Asio io_context
-    asio::io_context io_context;
-    std::cout << "Main.cpp -- Created ASIO Context" << std::endl;
+    try {
+        asio::io_context io_context;
+        auto work = asio::make_work_guard(io_context);
 
-    // Keep io_context alive even when there's no pending work
-    auto work_guard = asio::make_work_guard(io_context);
+        std::cout << "=== GQServer Starting ===\n";
 
-    // Initialize the singleton early (this triggers construction safely)
-    NetworkSocketMgr& networkMgr = NetworkSocketMgr::Instance();
-    std::cout << "NetworkSocketMgr singleton initialized" << std::endl;
+        std::cout << "Starting NetworkSocketMgr...\n";
+        NetworkSocketMgr::Instance().StartListening("0.0.0.0", 12345, io_context);
+        std::cout << "NetworkSocketMgr started successfully.\n";
 
-    // Example: Start your network thread(s)
-    std::thread networkThread([&io_context, &networkMgr]() {
-        // You can access the singleton safely from here
+        std::cout << "Starting World thread...\n";
+        World::Instance().Start();
+        std::cout << "World thread started.\n";
 
-        //
-        networkMgr.StartListening("127.0.0.1", 1234, io_context);
-        // Run the io_context in this thread (common pattern)
-        io_context.run();
-    });
+        std::thread networkThread([&]() {
+            std::cout << "io_context running...\n";
+            io_context.run();
+        });
 
-    // You can now access the singleton from any thread, e.g.:
-    // NetworkSocketMgr::Instance().SomeOtherMethod();
+        std::cout << "Server listening on port 12345\nPress Enter to stop...\n";
 
-    // ... rest of your program ...
+        std::cin.get();
 
-    // Clean shutdown example
-    io_context.stop();
-    if (networkThread.joinable()) {
-        networkThread.join();
+        std::cout << "Shutting down...\n";
+        World::Instance().Stop();
+        io_context.stop();
+        if (networkThread.joinable()) networkThread.join();
+
+        std::cout << "Server stopped.\n";
     }
-
+    catch (const std::exception& e) {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+    catch (...) {
+        std::cerr << "Unknown exception caught!\n";
+    }
     return 0;
-
 }

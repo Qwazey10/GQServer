@@ -1,18 +1,41 @@
-//
-// Created by michael on 4/6/26.
-//
+#pragma once
+#include <thread>
+#include <atomic>
+#include <deque>
+#include <mutex>
+#include <unordered_map>
+#include <functional>
+#include "Packets/WorldPacket.h"
+#include "WorldSession.h"
+#include "Opcodes/Opcodes.h"
 
-#ifndef GQUESTSERVER_WORLD_H
-#define GQUESTSERVER_WORLD_H
-
+struct QueuedPacket {
+    std::shared_ptr<WorldSession> session;
+    WorldPacket packet;
+};
 
 class World {
 public:
-    void start();
-    void stop();
+    static World& Instance();
 
-    void update();
+    void Start();
+    void Stop();
+    void Update(); // main world tick
+
+    void EnqueuePacket(std::shared_ptr<WorldSession> session, WorldPacket pkt);
+
+private:
+    World() = default;
+    void Run();
+    void RegisterOpcodeHandlers();
+
+    void HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+
+    std::thread m_thread;
+    std::atomic<bool> m_running{false};
+
+    std::deque<QueuedPacket> m_queue;
+    std::mutex m_queueMutex;
+
+    std::unordered_map<uint16_t, std::function<void(std::shared_ptr<WorldSession>, WorldPacket&)>> m_handlers;
 };
-
-
-#endif //GQUESTSERVER_WORLD_H

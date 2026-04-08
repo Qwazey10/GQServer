@@ -13,7 +13,10 @@ add_executable(GQuestServer main.cpp
         src/World/WorldSessionMgr.h
         src/World/World.cpp
         src/World/World.h
-        src/World/Opcodes/Opcodes.h)
+        src/World/Opcodes/Opcodes.h
+        src/World/Packets/WorldPacket.cpp
+        src/World/Packets/WorldPacket.h
+        src/World/WorldSessionMgr.cpp)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/src/

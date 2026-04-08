@@ -1,25 +1,19 @@
-//
-// Created by michael on 4/6/26.
-//
-
-#ifndef GQUESTSERVER_WORLDSESSIONMGR_H
-#define GQUESTSERVER_WORLDSESSIONMGR_H
+#pragma once
 #include <vector>
-
+#include <memory>
+#include <mutex>
 #include "WorldSession.h"
 
-
 class WorldSessionMgr {
-    std::vector<std::shared_ptr<WorldSession>> sessions_;
-    std::mutex sessions_mutex_;
+public:
+    static WorldSessionMgr& Instance();
 
+    void AddSession(std::shared_ptr<WorldSession> session);
+    void RemoveSession(int playerId);
+    void BroadcastPacket(const WorldPacket& pkt, int excludePlayerId = -1);
+
+private:
     WorldSessionMgr() = default;
-    WorldSessionMgr(const WorldSessionMgr&) = delete;
-
-
-    public:
-    std::vector<WorldSession> sessions_;
+    std::vector<std::shared_ptr<WorldSession>> m_sessions;
+    std::mutex m_mutex;
 };
-
-
-#endif //GQUESTSERVER_WORLDSESSIONMGR_H

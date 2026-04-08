@@ -7,11 +7,29 @@
 #include <string>
 #include <vector>
 
+#pragma once
+#include <cstdint>
+
+struct Position {
+    float x = 0.0f, y = 0.0f, z = 0.0f;
+};
 
 class Player {
 
 public:
-    int id_;
+
+    Player(int id) : m_id(id) {}
+
+    int GetId() const { return m_id; }
+    const Position& GetPosition() const { return m_position; }
+    void SetPosition(float x, float y, float z) {
+        m_position.x = x; m_position.y = y; m_position.z = z;
+    }
+
+private:
+    int m_id = -1;
+    Position m_position;
+
     std::string characterName_;
     int level_;
     int exp_;

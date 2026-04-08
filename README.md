@@ -1,1 +1,7 @@
 # GQServer
+
+Built with asio version 1.36.0
+Released Saturday, 16 August 2025.
+
+See doc/index.html for API documentation and a tutorial.
+
