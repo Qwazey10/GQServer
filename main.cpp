@@ -10,20 +10,20 @@ int main() {
 
         std::cout << "=== GQServer Starting ===\n";
 
-        std::cout << "Starting NetworkSocketMgr...\n";
-        NetworkSocketMgr::Instance().StartListening("0.0.0.0", 12345, io_context);
-        std::cout << "NetworkSocketMgr started successfully.\n";
+        std::cout << " MAIN -- Starting NetworkSocketMgr...\n";
+        NetworkSocketMgr::Instance().StartListening("127.0.0.1", 12345, io_context);
+        std::cout << "MAIN -- NetworkSocketMgr started successfully.\n";
 
-        std::cout << "Starting World thread...\n";
+        std::cout << "MAIN -- Starting World thread...\n";
         World::Instance().Start();
-        std::cout << "World thread started.\n";
+        std::cout << "MAIN -- World thread started.\n";
 
+        std::cout << "MAIN -- Starting io_context...\n";
         std::thread networkThread([&]() {
-            std::cout << "io_context running...\n";
+            std::cout << " Network Thread -- io_context running...\n";
             io_context.run();
         });
 
-        std::cout << "Server listening on port 12345\nPress Enter to stop...\n";
 
         std::cin.get();
 

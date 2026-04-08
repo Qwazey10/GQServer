@@ -21,7 +21,7 @@ void NetworkSocketMgr::StartListening(const std::string& ip, uint16_t port, asio
         // Extra safety: explicitly enable reuse (some systems need this)
         acceptor_->set_option(asio::ip::tcp::acceptor::reuse_address(true));
 
-        std::cout << "Server started successfully - Listening on " << ip << ":" << port << std::endl;
+        std::cout << "Network Socket Manager -- Server started successfully - Listening on " << ip << ":" << port << std::endl;
 
         DoAccept();
     }
@@ -38,13 +38,13 @@ void NetworkSocketMgr::DoAccept()
 {
     if (!acceptor_)
     {
-        std::cerr << "DoAccept: acceptor_ is nullptr!\n";
+        std::cerr << "Network Socket Manager -- DoAccept: acceptor_ is nullptr!\n";
         return;
     }
 
     if (!acceptor_->is_open())
     {
-        std::cerr << "DoAccept: acceptor is not open! (is_open() returned false)\n";
+        std::cerr << "Network Socket Manager -- DoAccept: acceptor is not open! (is_open() returned false)\n";
         return;
     }
 
