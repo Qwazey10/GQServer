@@ -1,6 +1,7 @@
 #pragma once
 #include <thread>
 #include <atomic>
+#include <cmath>
 #include <deque>
 #include <mutex>
 #include <unordered_map>
@@ -31,6 +32,13 @@ private:
 
     void HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
 
+    float Distance(const Position& a, const Position& b)
+    {
+        float dx = a.x - b.x;
+        float dy = a.y - b.y;
+        float dz = a.z - b.z;
+        return std::sqrt(dx*dx + dy*dy + dz*dz);
+    }
     std::thread m_thread;
     std::atomic<bool> m_running{false};
 

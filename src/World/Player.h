@@ -4,13 +4,19 @@
 
 #ifndef GQUESTSERVER_PLAYER_H
 #define GQUESTSERVER_PLAYER_H
-#include <string>
-#include <vector>
+
 
 #pragma once
 #include <cstdint>
-
+#include <mutex>
+#include <string>
+#include <unordered_set>
+#include <vector>
 struct Position {
+    float x = 0.0f, y = 0.0f, z = 0.0f;
+};
+
+struct Rotation {
     float x = 0.0f, y = 0.0f, z = 0.0f;
 };
 
@@ -26,9 +32,13 @@ public:
         m_position.x = x; m_position.y = y; m_position.z = z;
     }
 
-private:
     int m_id = -1;
+    int zoneId_ = 1;
     Position m_position;
+    Rotation m_rotation;
+
+    std::unordered_set<int> m_inRangePlayers;
+    std::mutex m_inRangeMutex;
 
     std::string characterName_;
     int level_;

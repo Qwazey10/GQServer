@@ -1,7 +1,3 @@
-//
-// Created by michael on 4/6/26.
-//
-
 #ifndef GQUESTSERVER_WORLDSESSION_H
 #define GQUESTSERVER_WORLDSESSION_H
 
@@ -22,6 +18,8 @@ public:
 
     int GetPlayerId() const { return m_playerId; }
     std::shared_ptr<Player> GetPlayer() { return m_player; }
+
+    Get
 
 private:
     void ReadHeader();

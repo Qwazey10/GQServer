@@ -48,7 +48,7 @@ void World::Run() {
         }
 
         Update();
-        std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60 TPS
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // ~60 TPS
     }
 }
 
@@ -73,5 +73,71 @@ void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldP
 }
 
 void World::Update() {
-    // Put your main game logic here (physics, AI, timers, etc.)
+    const float VISIBILITY_RANGE = 50.0f;
+
+    auto sessions = WorldSessionMgr::Instance().GetSessions();
+
+    for (auto& sessionA : sessions)
+    {
+        auto playerA = sessionA->GetPlayer();
+        if (!playerA)
+            continue;
+
+        std::unordered_set<int> newSet;
+
+        for (auto& sessionB : sessions)
+        {
+            if (sessionA == sessionB)
+                continue;
+
+            auto playerB = sessionB->GetPlayer();
+            if (!playerB)
+                continue;
+
+            if (playerA->zoneId_ != playerB->zoneId_)
+                continue;
+
+            float dist = Distance(playerA->GetPosition(), playerB->GetPosition());
+
+            if (dist <= VISIBILITY_RANGE)
+                newSet.insert(playerB->GetId());
+        }
+
+        // 🔒 Lock player's visibility set
+        std::lock_guard<std::mutex> lock(playerA->m_inRangeMutex);
+
+        // --- ENTERED RANGE ---
+        for (int id : newSet)
+        {
+            if (!playerA->m_inRangePlayers.count(id))
+            {
+                auto targetSession = FindSessionByPlayerId(id);
+                if (!targetSession) continue;
+
+                auto targetPlayer = targetSession->GetPlayer();
+
+                WorldPacket spawn(SMSG_PLAYER_SPAWN);
+                spawn << targetPlayer->GetId()
+                      << targetPlayer->GetPosition().x
+                      << targetPlayer->GetPosition().y
+                      << targetPlayer->GetPosition().z;
+
+                sessionA->SendPacket(spawn);
+            }
+        }
+
+        // --- LEFT RANGE ---
+        for (int id : playerA->m_inRangePlayers)
+        {
+            if (!newSet.count(id))
+            {
+                WorldPacket despawn(SMSG_PLAYER_DESPAWN);
+                despawn << id;
+                sessionA->SendPacket(despawn);
+            }
+        }
+
+        // Replace old set
+        playerA->m_inRangePlayers = std::move(newSet);
+    }
 }

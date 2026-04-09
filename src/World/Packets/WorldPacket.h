@@ -1,7 +1,3 @@
-//
-// Created by michael on 4/8/26.
-//
-
 #ifndef GQUESTSERVER_PACKETS_H
 #define GQUESTSERVER_PACKETS_H
 
