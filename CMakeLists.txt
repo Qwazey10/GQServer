@@ -18,9 +18,24 @@ add_executable(GQuestServer main.cpp
         src/World/Packets/WorldPacket.h
         src/World/WorldSessionMgr.cpp
         src/World/Opcodes/OpcodeHandler.cpp
-        src/World/Opcodes/OpcodeHandler.h)
+        src/World/Opcodes/OpcodeHandler.h
+        src/World/Creature.cpp
+        src/World/Creature.h
+        src/World/Map.cpp
+        src/World/Map.h
+        src/World/AI/CreatureAI.cpp
+        src/World/AI/CreatureAI.h
+        src/World/Maps/MapManager.cpp
+        src/World/Maps/MapManager.h
+        src/World/Maps/MapBuilder.cpp
+        src/World/Maps/MapBuilder.h)
+
+
 
 target_include_directories(${PROJECT_NAME}
-        PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/src/
-        PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/src/asio/include
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/asio/include
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/Recast/Recast/Include
+
+
 )

@@ -5,6 +5,7 @@
 #include <asio.hpp>
 #include <memory>
 #include "Player.h"
+#include "Recast.h"
 #include "Packets/WorldPacket.h"
 
 class WorldSession : public std::enable_shared_from_this<WorldSession> {
@@ -19,7 +20,7 @@ public:
     int GetPlayerId() const { return m_playerId; }
     std::shared_ptr<Player> GetPlayer() { return m_player; }
 
-    Get
+
 
 private:
     void ReadHeader();

@@ -30,6 +30,7 @@ void World::EnqueuePacket(std::shared_ptr<WorldSession> session, WorldPacket pkt
     m_queue.emplace_back(QueuedPacket{std::move(session), std::move(pkt)});
 }
 
+
 void World::Run() {
     while (m_running) {
         std::deque<QueuedPacket> local;
