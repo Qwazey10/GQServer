@@ -1,13 +1,27 @@
-//
-// Created by michael on 4/12/26.
-//
+#pragma once
 
-#ifndef GQUESTSERVER_MAPMANAGER_H
-#define GQUESTSERVER_MAPMANAGER_H
+#include <string>
+#include <unordered_map>
+#include <DetourNavMesh.h>
+#include <DetourNavMeshQuery.h>
+#include <vector>
 
-
-class MapManager {
+struct NavMeshData
+{
+    dtNavMesh* navMesh = nullptr;
+    dtNavMeshQuery* query = nullptr;
 };
 
+class MapManager
+{
+public:
+    bool LoadMap(int mapId, const std::string& file);
+    void UnloadMap(int mapId);
+    dtNavMesh* LoadNavMesh();
+    void FindPathExample(dtNavMesh* mesh);
 
-#endif //GQUESTSERVER_MAPMANAGER_H
+private:
+    std::unordered_map<int, NavMeshData> m_maps;
+
+
+};

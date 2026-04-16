@@ -12,6 +12,8 @@ class CreatureAI {
 
         void UpdateAI(float deltaTime);
 
+
+
 };
 
 

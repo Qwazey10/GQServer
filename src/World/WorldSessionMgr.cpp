@@ -25,3 +25,14 @@ void WorldSessionMgr::BroadcastPacket(const WorldPacket& pkt, int excludePlayerI
         }
     }
 }
+
+std::shared_ptr<WorldSession> WorldSessionMgr::GetSessionByPlayerID(int playerId) {
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    for (const auto& session : m_sessions) {
+        if (session->GetPlayerId() == playerId) {
+            return session;
+        }
+    }
+    return nullptr;
+}

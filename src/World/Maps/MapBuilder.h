@@ -1,13 +1,33 @@
-//
-// Created by michael on 4/12/26.
-//
+#pragma once
 
-#ifndef GQUESTSERVER_MAPBUILDER_H
-#define GQUESTSERVER_MAPBUILDER_H
+#include <string>
+#include <vector>
+#include <Recast.h>
+#include <DetourNavMeshBuilder.h>
+
+class MapBuilder
+{
 
 
-class MapBuilder {
+public:
+
+
+    MapBuilder() = default;
+    MapBuilder(const MapBuilder&) = delete;
+    MapBuilder& operator=(const MapBuilder&) = delete;
+
+    void GenerateNavMesh();
+
+    static MapBuilder& Instance() {
+        static MapBuilder instance;
+        return instance;
+    }
+
+    rcConfig cfg;
+
+
+
+
+
+
 };
-
-
-#endif //GQUESTSERVER_MAPBUILDER_H

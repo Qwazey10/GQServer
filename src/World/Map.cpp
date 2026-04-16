@@ -1,6 +1,6 @@
 #include "Map.h"
 #include "WorldSession.h"   // for SendPacket
-#include "Opcodes.h"
+#include "Opcodes/Opcodes.h"
 #include "World.h"
 
 Map::Map(uint32_t mapId) : m_mapId(mapId) {}
@@ -23,7 +23,7 @@ void Map::EnqueuePacket(std::shared_ptr<WorldSession> session, WorldPacket&& pkt
 }
 
 void Map::Run() {
-    while (m_running) {
+    /*while (m_running) {
         auto now = GetCurrentMs();   // your existing time helper
         uint32_t diff = now - m_lastUpdateTime;
         if (diff >= 50) {            // ~20 TPS minimum, adjust as needed
@@ -31,7 +31,7 @@ void Map::Run() {
             m_lastUpdateTime = now;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
+    }*/
 }
 
 void Map::Update(uint32_t diff) {

@@ -12,10 +12,7 @@
 #include "WorldSession.h"
 #include "Opcodes/Opcodes.h"
 
-struct QueuedPacket {
-    std::shared_ptr<WorldSession> session;
-    WorldPacket packet;
-};
+
 
 class World {
 public:

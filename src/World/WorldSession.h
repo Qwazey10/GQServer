@@ -21,7 +21,6 @@ public:
     std::shared_ptr<Player> GetPlayer() { return m_player; }
 
 
-
 private:
     void ReadHeader();
     void ReadPayload(uint16_t payloadSize);

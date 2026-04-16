@@ -3,6 +3,11 @@
 
 class Creature {
 
+        public:
+
+        Creature() = default;
+        ~Creature();
+
         uint64_t id;           // unique monster GUID
         uint32_t entry;        // template ID (for model, name, stats later)
         Position position;
@@ -22,7 +27,6 @@ class Creature {
         int HairColor = 1;
         int FacialHair = 1;
 
-        Creature(uint64_t id, uint32_t entry, float x, float y, float z, uint32_t zone);
 
         Position GetPosition() const { return position; }
         uint64_t GetId() const { return id; }

@@ -54,7 +54,9 @@ void World::Run() {
 }
 
 void World::RegisterOpcodeHandlers() {
-    m_handlers[CMSG_LOCATION_ROTATION] = [this](auto s, auto& p) { HandleLocationRotation(s, p); };
+
+
+    m_handlers[CMSG_UPDATE_PLAYER_LOCATION_ROTATION] = [this](auto s, auto& p) { HandleLocationRotation(s, p); };
 }
 
 void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
@@ -74,7 +76,7 @@ void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldP
 }
 
 void World::Update() {
-    const float VISIBILITY_RANGE = 50.0f;
+    const float VISIBILITY_RANGE = 500.0f;
 
     auto sessions = WorldSessionMgr::Instance().GetSessions();
 
@@ -112,7 +114,7 @@ void World::Update() {
         {
             if (!playerA->m_inRangePlayers.count(id))
             {
-                auto targetSession = FindSessionByPlayerId(id);
+                auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerID(id);
                 if (!targetSession) continue;
 
                 auto targetPlayer = targetSession->GetPlayer();

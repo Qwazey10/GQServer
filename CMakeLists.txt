@@ -36,6 +36,10 @@ target_include_directories(${PROJECT_NAME}
         PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
         PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/asio/include
         PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/Recast/Recast/Include
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/Recast/Detour/Include
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/Recast/DetourCrowd/Include
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/Recast/DetourTileCache/Include
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/Recast/DebugUtils/Include
 
 
 )

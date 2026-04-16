@@ -2,9 +2,18 @@
 #include <thread>
 #include "src/NetworkSocketMgr/NetworkSocketMgr.h"
 #include "src/World/World.h"
+#include "World/Maps/MapBuilder.h"
 
 int main() {
     try {
+
+        const char* mapName = "src/World/Maps/MapObj/dungeon.obj";
+        const char* mapName2 = "src/World/Maps/MapObj/dungeon2.obj";
+
+        std::cout << "=== Generating NavMesh ===\n";
+        MapBuilder::Instance().GenerateNavMesh();
+
+
         asio::io_context io_context;
         auto work = asio::make_work_guard(io_context);
 

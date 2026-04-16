@@ -4,10 +4,10 @@
 
 #include "Creature.h"
 
-Creature::Creature(uint64_t id, uint32_t entry, float x, float y, float z, uint32_t zone) {
-    : id(id), entry(entry), position{x, y, z}, zoneId(zone) {}
-}
 
+
+
+Creature::~Creature() = default;
 
 void Creature::UpdateAI(float deltaTime) {
     // Very basic AI: stand still for now
