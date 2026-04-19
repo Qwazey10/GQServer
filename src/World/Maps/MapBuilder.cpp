@@ -1,3 +1,5 @@
+#include "MapBuilder.h"
+
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -67,9 +69,10 @@ bool LoadOBJ(const char* filepath, std::vector<float>& outVerts, std::vector<int
 }
 
 
-void GenerateNavMesh() {
-    const char* inputPath = "src/World/Maps/MapObj/dungeon.obj";
-    const char* outputPath = "src/World/Maps/MapNavData/dungeon.nav";
+void MapBuilder::GenerateNavMesh() {
+const char* inputPath = "/home/michael/GQuestServer/src/World/Maps/MapObj/dungeon.obj";
+    const char* outputPath = "/home/michael/GQuestServer/src/World/Maps/MapNavData/dungeon.nav";
+
 
     std::vector<float> vertices;
     std::vector<int> triangles;

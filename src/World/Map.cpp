@@ -1,6 +1,6 @@
 #include "Map.h"
 #include "WorldSession.h"   // for SendPacket
-#include "Opcodes/Opcodes.h"
+//#include "Opcodes/Opcodes.h"
 #include "World.h"
 
 Map::Map(uint32_t mapId) : m_mapId(mapId) {}
@@ -35,7 +35,7 @@ void Map::Run() {
 }
 
 void Map::Update(uint32_t diff) {
-    // 1. Process incoming packets
+    /*// 1. Process incoming packets
     {
         std::lock_guard<std::mutex> lock(m_packetMutex);
         while (!m_packetQueue.empty()) {
@@ -77,5 +77,5 @@ void Map::Update(uint32_t diff) {
                 player->GetSession()->SendPacket(spawn);   // or queue it
             }
         }
-    }
+    }*/
 }

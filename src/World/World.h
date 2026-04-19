@@ -10,6 +10,7 @@
 #include "Map.h"
 #include "Packets/WorldPacket.h"
 #include "WorldSession.h"
+#include "NetworkSocketMgr/concurrentqueue.h"
 #include "Opcodes/Opcodes.h"
 
 
@@ -23,7 +24,7 @@ public:
     void Update(); // main world tick
 
     void EnqueuePacket(std::shared_ptr<WorldSession> session, WorldPacket pkt);
-
+    moodycamel::ConcurrentQueue<QueuedPacket> m_concurrentqueue;
     std::unordered_map<uint32_t, std::unique_ptr<Map>> m_maps;   // mapId -> Map
 
     Map* GetMap(uint32_t mapId);   // creates on demand
@@ -37,6 +38,7 @@ private:
 
 
     void HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+    void HandlePing(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
 
     float Distance(const Position& a, const Position& b)
     {
@@ -46,6 +48,12 @@ private:
         return std::sqrt(dx*dx + dy*dy + dz*dz);
     }
 
+
+    void InitDB();
+    void stopDB();
+
+    void processCallbacks();
+    void UpdatePlayerVisibility(std::shared_ptr<WorldSession> session);
 
 
     std::thread m_thread;

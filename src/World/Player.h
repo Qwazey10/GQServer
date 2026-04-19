@@ -32,6 +32,11 @@ public:
         m_position.x = x; m_position.y = y; m_position.z = z;
     }
 
+    const Rotation& GetRotation() const { return m_rotation; }
+    void SetRotation(float pitch, float yaw, float roll) {
+        m_rotation.x = pitch; m_rotation.y = yaw; m_rotation.z = roll;
+    }
+
     int m_id = -1;
     int zoneId_ = 1;
     Position m_position;

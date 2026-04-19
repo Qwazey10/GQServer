@@ -2,6 +2,8 @@
 #include "World.h"
 #include <iostream>
 
+#include "WorldSessionMgr.h"
+
 WorldSession::WorldSession(asio::ip::tcp::socket socket, int playerId)
     : m_socket(std::move(socket)), m_playerId(playerId), m_player(std::make_shared<Player>(playerId)) {}
 
@@ -56,5 +58,6 @@ void WorldSession::Disconnect() {
         m_socket.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
         m_socket.close(ec);
         std::cout << "[Session " << m_playerId << "] Disconnected\n";
+        WorldSessionMgr::Instance().RemoveSessionByPlayerID(m_playerId);
     }
 }

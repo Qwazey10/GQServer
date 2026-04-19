@@ -9,10 +9,15 @@ public:
     static WorldSessionMgr& Instance();
 
     void AddSession(std::shared_ptr<WorldSession> session);
-    void RemoveSession(int playerId);
+    void RemoveSessionByPlayerID(int playerId);
+    void RemoveSessionBySessionPtr(std::shared_ptr<WorldSession> session);
     void BroadcastPacket(const WorldPacket& pkt, int excludePlayerId = -1);
 
+    void PingAllConnectedPlayers();
+
     std::shared_ptr<WorldSession> GetSessionByPlayerID(int playerId);
+
+    void SendPacketToSession(std::shared_ptr<WorldSession> session, const WorldPacket &pkt);
 
     std::vector<std::shared_ptr<WorldSession>> GetSessions()
     {

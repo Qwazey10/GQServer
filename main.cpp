@@ -3,6 +3,7 @@
 #include "src/NetworkSocketMgr/NetworkSocketMgr.h"
 #include "src/World/World.h"
 #include "World/Maps/MapBuilder.h"
+#include "World/TimeManager/TimeManager.h"
 
 int main() {
     try {
@@ -19,6 +20,9 @@ int main() {
 
         std::cout << "=== GQServer Starting ===\n";
 
+        std::cout << "MAIN -- Initializing TimeManager...\n";
+        TimeManager::Instance().Initialize();
+
         std::cout << " MAIN -- Starting NetworkSocketMgr...\n";
         NetworkSocketMgr::Instance().StartListening("127.0.0.1", 12345, io_context);
         std::cout << "MAIN -- NetworkSocketMgr started successfully.\n";
@@ -33,6 +37,13 @@ int main() {
             io_context.run();
         });
 
+        TimeManager::Instance().Schedule(5000, []() {
+    std::cout << "5 seconds have passed!" << std::endl;});
+
+        // Schedule repeating timer (e.g. every 10 seconds)
+        TimeManager::Instance().ScheduleRepeating(10000, []() {
+            std::cout << "Repeating every 10s - Uptime: "
+                      << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;});
 
         std::cin.get();
 

@@ -7,6 +7,8 @@
 #include <iostream>
 #include <chrono>
 
+#include "TimeManager/TimeManager.h"
+
 World& World::Instance() {
     static World instance;
     return instance;
@@ -18,6 +20,16 @@ void World::Start() {
     m_running = true;
     m_thread = std::thread(&World::Run, this);
     std::cout << "World thread started (60 TPS)\n";
+
+    //Start Timer Manager to ping connected players.
+    TimeManager::Instance().ScheduleRepeating(10000, []() {
+    std::cout << "Repeating every 10s - Ping Clients: " << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;});
+    WorldSessionMgr::Instance().PingAllConnectedPlayers();
+
+    TimeManager::Instance().ScheduleRepeating(15000, []() {
+    std::cout << "Repeating every 15s - Print Ping for all Players: " << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;});
+    WorldSessionMgr::Instance().PingAllConnectedPlayers();
+
 }
 
 void World::Stop() {
@@ -26,20 +38,15 @@ void World::Stop() {
 }
 
 void World::EnqueuePacket(std::shared_ptr<WorldSession> session, WorldPacket pkt) {
-    std::lock_guard<std::mutex> lock(m_queueMutex);
-    m_queue.emplace_back(QueuedPacket{std::move(session), std::move(pkt)});
+    m_concurrentqueue.enqueue(QueuedPacket{std::move(session), std::move(pkt)});
 }
 
 
 void World::Run() {
     while (m_running) {
-        std::deque<QueuedPacket> local;
-        {
-            std::lock_guard<std::mutex> lock(m_queueMutex);
-            local.swap(m_queue);
-        }
-
-        for (auto& qp : local) {
+        QueuedPacket qp;
+        // Bulk dequeue is even faster
+        while (m_concurrentqueue.try_dequeue(qp)) {
             auto it = m_handlers.find(qp.packet.GetOpcode());
             if (it != m_handlers.end()) {
                 it->second(qp.session, qp.packet);
@@ -49,7 +56,8 @@ void World::Run() {
         }
 
         Update();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // ~60 TPS
+        TimeManager::Instance().Update();
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 }
 
@@ -57,16 +65,19 @@ void World::RegisterOpcodeHandlers() {
 
 
     m_handlers[CMSG_UPDATE_PLAYER_LOCATION_ROTATION] = [this](auto s, auto& p) { HandleLocationRotation(s, p); };
+    m_handlers[CMSG_PING] = [this](auto s, auto& p) { HandlePing(s, p);};
 }
 
 void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
-    float x = 0, y = 0, z = 0;
-    pkt >> x >> y >> z;                     // easy to add more fields later
+    float x = 0, y = 0, z = 0, yaw = 0, pitch = 0, roll = 0;
+    pkt >> x >> y >> z >> yaw >> pitch >> roll;                     // easy to add more fields later
 
     session->GetPlayer()->SetPosition(x, y, z);
+    session->GetPlayer()->SetRotation(pitch, yaw, roll);
 
     std::cout << "[World] Player " << session->GetPlayerId()
-              << " moved to (" << x << ", " << y << ", " << z << ")\n";
+              << " moved to (" << x << ", " << y << ", " << z << ")"
+                " Rot ("<< yaw <<","<< pitch << "," << roll <<")\n";
 
     // Broadcast to others
     WorldPacket broadcast(SMSG_LOCATION_UPDATE);
@@ -74,10 +85,17 @@ void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldP
 
     WorldSessionMgr::Instance().BroadcastPacket(broadcast, session->GetPlayerId());
 }
+void World::HandlePing(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
+    std::cout << "PING Message recieved\n";
+
+    WorldPacket Newpkt(SMSG_PONG);
+    WorldSessionMgr::Instance().SendPacketToSession(session,Newpkt);
+}
 
 void World::Update() {
     const float VISIBILITY_RANGE = 500.0f;
 
+    //Get the array of connected sessions
     auto sessions = WorldSessionMgr::Instance().GetSessions();
 
     for (auto& sessionA : sessions)
@@ -119,6 +137,7 @@ void World::Update() {
 
                 auto targetPlayer = targetSession->GetPlayer();
 
+                std::cout << "[World] Player " << playerA->GetId() << " entered range of player " << targetPlayer->GetId() << "\n";
                 WorldPacket spawn(SMSG_PLAYER_SPAWN);
                 spawn << targetPlayer->GetId()
                       << targetPlayer->GetPosition().x

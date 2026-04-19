@@ -1,12 +1,10 @@
-//
-// Created by michael on 4/6/26.
-//
+
 
 #ifndef GQUESTSERVER_OPCODES_H
 #define GQUESTSERVER_OPCODES_H
-#include <cstdint>
+//#include <cstdint>
 
-#endif //GQUESTSERVER_OPCODES_H
+
 
 enum Opcodes : uint16_t {
 
@@ -18,12 +16,20 @@ enum Opcodes : uint16_t {
   CMSG_PING = 0x0003,
   SMSG_PONG = 0x0004,
 
-
-  SMSG_PLAYER_SPAWN = 0x0008,
-  SMSG_PLAYER_DESPAWN = 0x0009,
+  //Player movement - CMSG received from the client, SMSG is to SET Player Rotation ie a warp portal or local spell
   CMSG_UPDATE_PLAYER_LOCATION_ROTATION = 0x0005,
   SMSG_UPDATE_PLAYER_LOCATION_ROTATION = 0x0006,
 
+  //Add or Remove Players from the player inView menu.
+  SMSG_PLAYER_SPAWN = 0x0008,
+  SMSG_PLAYER_DESPAWN = 0x0009,
+
   SMSG_LOCATION_UPDATE = 0x0007,
 
+  CMSG_PLAYER_MOVEMENT = 0x000A,
+  SMSG_PLAYER_MOVEMENT = 0x000B,
+
 };
+
+
+#endif //GQUESTSERVER_OPCODES_H
