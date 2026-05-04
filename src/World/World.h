@@ -39,7 +39,8 @@ private:
 
 
     void HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
-    void Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+
+    static void Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
     void Handle_ClientAuthRequest(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
 
     float Distance(const Position& a, const Position& b)

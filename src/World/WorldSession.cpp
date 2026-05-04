@@ -13,42 +13,82 @@ void WorldSession::Start() {
     ReadHeader();
 }
 
-void WorldSession::ReadHeader() {
+void WorldSession::ReadHeader()
+{
     asio::async_read(m_socket, asio::buffer(m_headerBuf),
-        [self = shared_from_this()](asio::error_code ec, std::size_t) {
-            if (ec) { self->Disconnect(); return; }
+        [self = shared_from_this()](asio::error_code ec, std::size_t)
+        {
+            if (ec)
+            {
+                self->Disconnect();
+                return;
+            }
 
-            uint16_t payloadSize = *reinterpret_cast<uint16_t*>(self->m_headerBuf.data());
-            uint16_t opcode = *reinterpret_cast<uint16_t*>(self->m_headerBuf.data() + 2);
+            uint16_t payloadSize = 0;
+            uint16_t opcode = 0;
+
+            std::memcpy(&payloadSize, self->m_headerBuf.data(), sizeof(uint16_t));
+            std::memcpy(&opcode, self->m_headerBuf.data() + 2, sizeof(uint16_t));
+
+            payloadSize = ntohs(payloadSize);
+            opcode = ntohs(opcode);
+
+            // 🚨 sanity check (VERY IMPORTANT)
+            if (payloadSize > MAX_PACKET_SIZE)
+            {
+                std::cout << "[Session " << self->m_playerId << "] Invalid packet size: " << payloadSize << "\n";
+                self->Disconnect();
+                return;
+            }
 
             self->m_payloadBuf.resize(payloadSize);
             self->ReadPayload(opcode);
         });
 }
 
-void WorldSession::ReadPayload(uint16_t opcode) {
+void WorldSession::ReadPayload(uint16_t opcode)
+{
     asio::async_read(m_socket, asio::buffer(m_payloadBuf),
-        [self = shared_from_this(), opcode](asio::error_code ec, std::size_t) {
-            if (ec) { self->Disconnect(); return; }
+        [self = shared_from_this(), opcode](asio::error_code ec, std::size_t)
+        {
+            if (ec)
+            {
+                self->Disconnect();
+                return;
+            }
 
             WorldPacket pkt(opcode, std::move(self->m_payloadBuf));
             World::Instance().EnqueuePacket(self, std::move(pkt));
 
-            self->ReadHeader(); // continue reading next packet
+            self->ReadHeader();
         });
 }
 
-void WorldSession::SendPacket(WorldPacket pkt) {
+void WorldSession::SendPacket(const WorldPacket& pkt)
+{
     uint16_t payloadSize = static_cast<uint16_t>(pkt.GetData().size());
-    std::vector<uint8_t> buffer(4 + payloadSize);
 
-    *reinterpret_cast<uint16_t*>(buffer.data()) = payloadSize;
-    *reinterpret_cast<uint16_t*>(buffer.data() + 2) = pkt.GetOpcode();
-    std::copy(pkt.GetData().begin(), pkt.GetData().end(), buffer.begin() + 4);
+    if (payloadSize > MAX_PACKET_SIZE)
+    {
+        std::cout << "[Session " << m_playerId << "] Tried to send oversized packet\n";
+        return;
+    }
+
+    uint16_t sizeNet = htons(payloadSize);
+    uint16_t opcodeNet = htons(pkt.GetOpcode());
+
+    std::vector<uint8_t> buffer;
+    buffer.resize(4 + payloadSize);
+
+    std::memcpy(buffer.data(), &sizeNet, sizeof(uint16_t));
+    std::memcpy(buffer.data() + 2, &opcodeNet, sizeof(uint16_t));
+    std::memcpy(buffer.data() + 4, pkt.GetData().data(), payloadSize);
 
     asio::async_write(m_socket, asio::buffer(buffer),
-        [self = shared_from_this()](asio::error_code ec, std::size_t) {
-            if (ec) self->Disconnect();
+        [self = shared_from_this()](asio::error_code ec, std::size_t)
+        {
+            if (ec)
+                self->Disconnect();
         });
 }
 

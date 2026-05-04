@@ -60,8 +60,7 @@ add_executable(GQuestServer
         src/Recast/Recast/Source/RecastRasterization.cpp
         src/Recast/Recast/Source/RecastRegion.cpp
 
-        src/Recast/DetourTileCache/Source/DetourTileCache.cpp
-        src/Recast/DetourTileCache/Source/DetourTileCache.cpp
+
         src/Recast/DetourTileCache/Include/DetourTileCache.h
         src/World/TimeManager/TimeManager.cpp
         src/World/TimeManager/TimeManager.h
@@ -69,6 +68,8 @@ add_executable(GQuestServer
 
 )
 
+target_link_libraries(GQuestServer PRIVATE ws2_32)
+target_link_libraries(GQuestServer PRIVATE ws2_32 mswsock)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src

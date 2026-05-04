@@ -7,6 +7,7 @@
 #include "Player.h"
 #include "Recast.h"
 #include "Packets/WorldPacket.h"
+constexpr uint16_t MAX_PACKET_SIZE = 8192; // 8KB sanity limit
 
 class WorldSession : public std::enable_shared_from_this<WorldSession> {
 public:
@@ -14,7 +15,7 @@ public:
     ~WorldSession();
 
     void Start();
-    void SendPacket(WorldPacket pkt);
+    void SendPacket(const WorldPacket& pkt);
     void Disconnect();
 
     int GetPlayerId() const { return m_playerId; }

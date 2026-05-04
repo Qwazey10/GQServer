@@ -65,7 +65,7 @@ void World::RegisterOpcodeHandlers() {
 
 
     m_handlers[CMSG_UPDATE_PLAYER_LOCATION_ROTATION] = [this](auto s, auto& p) { HandleLocationRotation(s, p); };
-    m_handlers[CMSG_PING] = [this](auto s, auto& p) { HandlePing(s, p);};
+    m_handlers[CMSG_PING] = [this](auto s, auto& p) { Handle_CMSG_PING(s, p);};
 }
 
 
@@ -155,15 +155,18 @@ void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldP
         << " moved to (" << x << ", " << y << ", " << z << ")"
         " Rot (" << yaw << "," << pitch << "," << roll << ")\n";
 
-    // Broadcast to others
+    /*// Broadcast to others
     WorldPacket broadcast(SMSG_LOCATION_UPDATE);
-    broadcast << session->GetPlayerId() << x << y << z;
+    broadcast << session->GetPlayerId() << x << y << z;*/
 
-    WorldSessionMgr::Instance().BroadcastPacket(broadcast, session->GetPlayerId());
+   // WorldSessionMgr::Instance().BroadcastPacket(broadcast, session->GetPlayerId());
 }
-void World::HandlePing(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
+
+void World::Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket &pkt) {
     std::cout << "PING Message recieved\n";
 
     WorldPacket Newpkt(SMSG_PONG);
     WorldSessionMgr::Instance().SendPacketToSession(session, Newpkt);
 }
+
+
