@@ -8,6 +8,7 @@
 dtNavMesh* LoadNavMesh() {
     const char* path = "src/World/Maps/MapNavData/dungeon.nav";
 
+
     std::ifstream inFile(path, std::ios::in | std::ios::binary | std::ios::ate);
     if (!inFile.is_open()) return nullptr;
 

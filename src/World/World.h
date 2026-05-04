@@ -23,6 +23,7 @@ public:
     void Stop();
     void Update(); // main world tick
 
+
     void EnqueuePacket(std::shared_ptr<WorldSession> session, WorldPacket pkt);
     moodycamel::ConcurrentQueue<QueuedPacket> m_concurrentqueue;
     std::unordered_map<uint32_t, std::unique_ptr<Map>> m_maps;   // mapId -> Map
@@ -38,7 +39,8 @@ private:
 
 
     void HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
-    void HandlePing(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+    void Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+    void Handle_ClientAuthRequest(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
 
     float Distance(const Position& a, const Position& b)
     {

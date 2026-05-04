@@ -68,29 +68,7 @@ void World::RegisterOpcodeHandlers() {
     m_handlers[CMSG_PING] = [this](auto s, auto& p) { HandlePing(s, p);};
 }
 
-void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
-    float x = 0, y = 0, z = 0, yaw = 0, pitch = 0, roll = 0;
-    pkt >> x >> y >> z >> yaw >> pitch >> roll;                     // easy to add more fields later
 
-    session->GetPlayer()->SetPosition(x, y, z);
-    session->GetPlayer()->SetRotation(pitch, yaw, roll);
-
-    std::cout << "[World] Player " << session->GetPlayerId()
-              << " moved to (" << x << ", " << y << ", " << z << ")"
-                " Rot ("<< yaw <<","<< pitch << "," << roll <<")\n";
-
-    // Broadcast to others
-    WorldPacket broadcast(SMSG_LOCATION_UPDATE);
-    broadcast << session->GetPlayerId() << x << y << z;
-
-    WorldSessionMgr::Instance().BroadcastPacket(broadcast, session->GetPlayerId());
-}
-void World::HandlePing(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
-    std::cout << "PING Message recieved\n";
-
-    WorldPacket Newpkt(SMSG_PONG);
-    WorldSessionMgr::Instance().SendPacketToSession(session,Newpkt);
-}
 
 void World::Update() {
     const float VISIBILITY_RANGE = 500.0f;
@@ -162,4 +140,30 @@ void World::Update() {
         // Replace old set
         playerA->m_inRangePlayers = std::move(newSet);
     }
+}
+void World::Handle_ClientAuthRequest(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
+
+}
+void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
+    float x = 0, y = 0, z = 0, yaw = 0, pitch = 0, roll = 0;
+    pkt >> x >> y >> z >> yaw >> pitch >> roll;                     // easy to add more fields later
+
+    session->GetPlayer()->SetPosition(x, y, z);
+    session->GetPlayer()->SetRotation(pitch, yaw, roll);
+
+    std::cout << "[World] Player " << session->GetPlayerId()
+        << " moved to (" << x << ", " << y << ", " << z << ")"
+        " Rot (" << yaw << "," << pitch << "," << roll << ")\n";
+
+    // Broadcast to others
+    WorldPacket broadcast(SMSG_LOCATION_UPDATE);
+    broadcast << session->GetPlayerId() << x << y << z;
+
+    WorldSessionMgr::Instance().BroadcastPacket(broadcast, session->GetPlayerId());
+}
+void World::HandlePing(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
+    std::cout << "PING Message recieved\n";
+
+    WorldPacket Newpkt(SMSG_PONG);
+    WorldSessionMgr::Instance().SendPacketToSession(session, Newpkt);
 }

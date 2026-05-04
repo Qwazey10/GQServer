@@ -1,3 +1,6 @@
 src/asio/
 /asio/
 /World/Maps/MapObj/
+/cmake-build-debug/
+/out/
+/.idea/
