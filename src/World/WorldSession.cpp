@@ -68,24 +68,18 @@ void WorldSession::SendPacket(const WorldPacket& pkt)
 {
     uint16_t payloadSize = static_cast<uint16_t>(pkt.GetData().size());
 
-    if (payloadSize > MAX_PACKET_SIZE)
-    {
-        std::cout << "[Session " << m_playerId << "] Tried to send oversized packet\n";
-        return;
-    }
+    auto buffer = std::make_shared<std::vector<uint8_t>>();
+    buffer->resize(4 + payloadSize);
 
     uint16_t sizeNet = htons(payloadSize);
     uint16_t opcodeNet = htons(pkt.GetOpcode());
 
-    std::vector<uint8_t> buffer;
-    buffer.resize(4 + payloadSize);
+    std::memcpy(buffer->data(), &sizeNet, 2);
+    std::memcpy(buffer->data() + 2, &opcodeNet, 2);
+    std::memcpy(buffer->data() + 4, pkt.GetData().data(), payloadSize);
 
-    std::memcpy(buffer.data(), &sizeNet, sizeof(uint16_t));
-    std::memcpy(buffer.data() + 2, &opcodeNet, sizeof(uint16_t));
-    std::memcpy(buffer.data() + 4, pkt.GetData().data(), payloadSize);
-
-    asio::async_write(m_socket, asio::buffer(buffer),
-        [self = shared_from_this()](asio::error_code ec, std::size_t)
+    asio::async_write(m_socket, asio::buffer(*buffer),
+        [self = shared_from_this(), buffer](std::error_code ec, std::size_t)
         {
             if (ec)
                 self->Disconnect();

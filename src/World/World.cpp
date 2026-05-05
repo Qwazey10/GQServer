@@ -26,9 +26,11 @@ void World::Start() {
     std::cout << "Repeating every 10s - Ping Clients: " << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;});
     WorldSessionMgr::Instance().PingAllConnectedPlayers();
 
-    TimeManager::Instance().ScheduleRepeating(15000, []() {
-    std::cout << "Repeating every 15s - Print Ping for all Players: " << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;});
+    TimeManager::Instance().ScheduleRepeating(1000, []() {
+    std::cout << "World Timer -- Repeating every 15s - Print Ping for all Connected Player " << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;
     WorldSessionMgr::Instance().PingAllConnectedPlayers();
+        });
+   
 
 }
 

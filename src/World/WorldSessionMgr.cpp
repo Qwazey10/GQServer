@@ -1,6 +1,6 @@
 #include "WorldSessionMgr.h"
-
 #include "Opcodes/Opcodes.h"
+#include <iostream>
 
 WorldSessionMgr& WorldSessionMgr::Instance() {
     static WorldSessionMgr instance;
@@ -34,10 +34,25 @@ void WorldSessionMgr::BroadcastPacket(const WorldPacket& pkt, int excludePlayerI
 }
 
 
-void WorldSessionMgr::PingAllConnectedPlayers() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    for (const auto& session : m_sessions) {
-        session->SendPacket(WorldPacket(SMSG_PONG));
+void WorldSessionMgr::PingAllConnectedPlayers()
+{
+    std::vector<std::shared_ptr<WorldSession>> sessionsCopy;
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        sessionsCopy = m_sessions; // copy
+    }
+
+    uint32_t timestamp = static_cast<uint32_t>(std::time(nullptr));
+
+    for (const auto& session : sessionsCopy)
+    {
+        if (!session) continue;
+
+        WorldPacket pkt(SMSG_PONG);
+        pkt << timestamp;
+
+        session->SendPacket(pkt);
     }
 }
 
@@ -54,5 +69,4 @@ std::shared_ptr<WorldSession> WorldSessionMgr::GetSessionByPlayerID(int playerId
 
 void WorldSessionMgr::SendPacketToSession(std::shared_ptr<WorldSession> session, const WorldPacket& pkt) {
     session->SendPacket(pkt);
-
 }

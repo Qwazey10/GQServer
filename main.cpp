@@ -38,12 +38,14 @@ int main() {
         });
 
         TimeManager::Instance().Schedule(5000, []() {
-    std::cout << "5 seconds have passed!" << std::endl;});
+        std::cout << "5 seconds have passed!" << std::endl;});
 
         // Schedule repeating timer (e.g. every 10 seconds)
         TimeManager::Instance().ScheduleRepeating(10000, []() {
             std::cout << "Repeating every 10s - Uptime: "
                       << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;});
+
+
 
         std::cin.get();
 

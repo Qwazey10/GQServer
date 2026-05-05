@@ -2,7 +2,7 @@
 
 #ifndef GQUESTSERVER_OPCODES_H
 #define GQUESTSERVER_OPCODES_H
-//#include <cstdint>
+#include <cstdint>
 
 
 
@@ -49,8 +49,20 @@ enum Opcodes : uint16_t {
   //Spawn - Despawn Relative Game Objects for the server. Interactables etc. 
   SMSG_OBJECT_SPAWN = 0x0018, //Opcode telling the client to spawn in a Game Object 
   SMSG_OBJECT_DEPAWN = 0x0019, //Opcode telling the client to de-spawn a Game Object
-  SMSG_OBJECT_UPDATE = 0x0020 //Opcode telling the client to update the state of a Game Object. 
+  SMSG_OBJECT_UPDATE = 0x0020, //Opcode telling the client to update the state of a Game Object. 
   
+  //Chat Opcodes
+  CMSG_CHAT_SAY = 0x0021, // Opcode for the clients chat requset
+  CMSG_CHAT_SHOUT = 0x0022, // Opcode for the client to request a shout
+  CMSG_CHAT_GUILD = 0x0023, // Opcode for the client to request a Guild Message
+  CMSG_CHAT_TELL = 0x0024, // Opcode for the client to request a tell message
+
+  SMSG_CHAT_SAY = 0x0025, //Opcode for reporting say messages
+  SMSG_CHAT_SHOUT = 0x0026, // Opcode for reporting relative shout messages
+  SMSG_CHAT_GUILD = 0x0027, // Opcode for reporting relative guild messages
+  SMSG_CHAT_TELL = 0x0028, // Opcode for reporting relative guild messages
+
+  SMSG_SEND_SERVER_TIME = 0x0029 // Opcode for the server to report server time to all players 
 };
 
 
