@@ -45,13 +45,26 @@ void World::EnqueuePacket(std::shared_ptr<WorldSession> session, WorldPacket pkt
 void World::Run() {
     while (m_running) {
         QueuedPacket qp;
-        // Bulk dequeue is even faster
+
         while (m_concurrentqueue.try_dequeue(qp)) {
             auto it = m_handlers.find(qp.packet.GetOpcode());
+
             if (it != m_handlers.end()) {
-                it->second(qp.session, qp.packet);
+                try {
+                    it->second(qp.session, qp.packet);
+                }
+                catch (const std::exception& e) {
+                    std::cout << "Packet handler exception: " << e.what() << "\n";
+                    qp.session->Disconnect();
+                }
+                catch (...) {
+                    std::cout << "Unknown packet handler exception\n";
+                    qp.session->Disconnect();
+                }
             } else {
-                std::cout << "Unknown opcode: 0x" << std::hex << qp.packet.GetOpcode() << "\n";
+                std::cout << "Unknown opcode: 0x"
+                          << std::hex << qp.packet.GetOpcode()
+                          << std::dec << "\n";
             }
         }
 

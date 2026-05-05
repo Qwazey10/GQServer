@@ -53,7 +53,7 @@ private:
 
 
     void InitDB();
-    void stopDB();
+    void StopDB();
 
     void processCallbacks();
     void UpdatePlayerVisibility(std::shared_ptr<WorldSession> session);
