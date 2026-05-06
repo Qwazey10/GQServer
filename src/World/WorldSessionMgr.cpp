@@ -56,6 +56,8 @@ void WorldSessionMgr::PingAllConnectedPlayers()
     }
 }
 
+
+
 std::shared_ptr<WorldSession> WorldSessionMgr::GetSessionByPlayerID(int playerId) {
 
     std::lock_guard<std::mutex> lock(m_mutex);

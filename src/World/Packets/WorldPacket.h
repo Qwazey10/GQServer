@@ -11,13 +11,17 @@
 #include <arpa/inet.h>
 #endif
 
+// For std::bit_cast (C++20)
+#include <bit>
+
 class WorldPacket
 {
 public:
     WorldPacket() = default;
     explicit WorldPacket(uint16_t opcode) : m_opcode(opcode) {}
     WorldPacket(uint16_t opcode, std::vector<uint8_t> data)
-        : m_opcode(opcode), m_data(std::move(data)) {}
+        : m_opcode(opcode), m_data(std::move(data)) {
+    }
 
     uint16_t GetOpcode() const { return m_opcode; }
     const std::vector<uint8_t>& GetData() const { return m_data; }
@@ -30,13 +34,36 @@ public:
     {
         static_assert(std::is_trivially_copyable_v<T>, "POD only");
 
-        if constexpr (sizeof(T) == 2)
-            value = htons(value);
+        if constexpr (std::is_same_v<T, bool>)
+        {
+            uint8_t b = value ? 1 : 0;
+            m_data.insert(m_data.end(), &b, &b + 1);
+        }
+        else if constexpr (std::is_floating_point_v<T>)
+        {
+            uint32_t bits = std::bit_cast<uint32_t>(value);
+            bits = htonl(bits);
+            const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&bits);
+            m_data.insert(m_data.end(), ptr, ptr + sizeof(uint32_t));
+        }
+        else if constexpr (sizeof(T) == 2)
+        {
+            value = htons(static_cast<uint16_t>(value));  // safe cast for signed
+            const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&value);
+            m_data.insert(m_data.end(), ptr, ptr + sizeof(T));
+        }
         else if constexpr (sizeof(T) == 4)
-            value = htonl(value);
-
-        const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&value);
-        m_data.insert(m_data.end(), ptr, ptr + sizeof(T));
+        {
+            value = htonl(static_cast<uint32_t>(value));
+            const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&value);
+            m_data.insert(m_data.end(), ptr, ptr + sizeof(T));
+        }
+        else
+        {
+            // 64-bit and others - no endian swap for now
+            const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&value);
+            m_data.insert(m_data.end(), ptr, ptr + sizeof(T));
+        }
         return *this;
     }
 
@@ -62,14 +89,30 @@ public:
         if (m_readPos + sizeof(T) > m_data.size())
             throw std::runtime_error("Read past end");
 
-        std::memcpy(&value, m_data.data() + m_readPos, sizeof(T));
-        m_readPos += sizeof(T);
+        if constexpr (std::is_same_v<T, bool>)
+        {
+            value = (m_data[m_readPos] != 0);
+            m_readPos += 1;
+        }
+        else if constexpr (std::is_floating_point_v<T>)
+        {
+            uint32_t bits = 0;
+            std::memcpy(&bits, m_data.data() + m_readPos, sizeof(uint32_t));
+            m_readPos += sizeof(uint32_t);
 
-        if constexpr (sizeof(T) == 2)
-            value = ntohs(value);
-        else if constexpr (sizeof(T) == 4)
-            value = ntohl(value);
+            bits = ntohl(bits);
+            value = std::bit_cast<T>(bits);
+        }
+        else
+        {
+            std::memcpy(&value, m_data.data() + m_readPos, sizeof(T));
+            m_readPos += sizeof(T);
 
+            if constexpr (sizeof(T) == 2)
+                value = ntohs(static_cast<uint16_t>(value));
+            else if constexpr (sizeof(T) == 4)
+                value = ntohl(static_cast<uint32_t>(value));
+        }
         return *this;
     }
 

@@ -148,10 +148,11 @@ void World::Handle_ClientAuthRequest(std::shared_ptr<WorldSession> session, Worl
 }
 void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
     float x = 0, y = 0, z = 0, yaw = 0, pitch = 0, roll = 0;
-    pkt >> x >> y >> z >> yaw >> pitch >> roll;                     // easy to add more fields later
-
+    pkt >> x >> y >> z >> yaw >> pitch >> roll;                    
+    
     session->GetPlayer()->SetPosition(x, y, z);
     session->GetPlayer()->SetRotation(pitch, yaw, roll);
+
 
     std::cout << "[World] Player " << session->GetPlayerId()
         << " moved to (" << x << ", " << y << ", " << z << ")"

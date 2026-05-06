@@ -1,7 +1,6 @@
 #include "WorldSession.h"
 #include "World.h"
 #include <iostream>
-
 #include "WorldSessionMgr.h"
 
 WorldSession::WorldSession(asio::ip::tcp::socket socket, int playerId)
