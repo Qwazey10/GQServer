@@ -8,6 +8,11 @@
 #include <chrono>
 
 #include "TimeManager/TimeManager.h"
+#include <random>
+
+#include <openssl/sha.h>
+#include <sstream>
+#include <iomanip>
 
 World& World::Instance() {
     static World instance;
@@ -26,7 +31,7 @@ void World::Start() {
     std::cout << "Repeating every 10s - Ping Clients: " << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;});
     WorldSessionMgr::Instance().PingAllConnectedPlayers();
 
-    TimeManager::Instance().ScheduleRepeating(1000, []() {
+    TimeManager::Instance().ScheduleRepeating(10000, []() {
     std::cout << "World Timer -- Repeating every 15s - Print Ping for all Connected Player " << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;
     WorldSessionMgr::Instance().PingAllConnectedPlayers();
         });
@@ -81,6 +86,9 @@ void World::RegisterOpcodeHandlers() {
 
     m_handlers[CMSG_UPDATE_PLAYER_LOCATION_ROTATION] = [this](auto s, auto& p) { HandleLocationRotation(s, p); };
     m_handlers[CMSG_PING] = [this](auto s, auto& p) { Handle_CMSG_PING(s, p);};
+
+    m_handlers[CMSG_AUTH] = [this](auto s, auto& p) { Handle_CMSG_AUTH(s, p);};
+    m_handlers[CMSG_AUTH_CHALLENGE] = [this](auto s, auto& p) {Handle_CMSG_AUTH_CHALLENGE(s, p);};
 }
 
 
@@ -156,9 +164,137 @@ void World::Update() {
         playerA->m_inRangePlayers = std::move(newSet);
     }
 }
-void World::Handle_ClientAuthRequest(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
 
+
+void World::Handle_CMSG_AUTH(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
+    std::string username;
+
+    //pull username out of packet.
+    pkt >> username;
+
+    //Expand this to get the auth_login database later on, right now its just "testplayer" for what we expect.
+    std::string ExpectedUsername = "testplayer";
+
+    std::cout << "[Auth] Auth request from username: " << username << "\n";
+
+    if (username == ExpectedUsername)
+    {
+        std::cout << "[CMSG] - Auth -- Username matches what we expect, respond with SMSG_AUTH" << username << "==" << ExpectedUsername << "\n";
+
+        
+        uint64_t salt = GenerateSecureSalt();
+        //cache the salt in the session for later use
+        session->SetAuthSalt(salt);
+
+        WorldPacket response(SMSG_AUTH);
+        response << username << salt;   // echo username + send salt
+
+        session->SendPacket(response);
+        std::cout << "[Auth] Sent SMSG_AUTH with salt: " << salt << "\n";
+        return;
+    }
+    else
+    {
+        std::cout << "{CMSG) - Auth -- Username DOES NOT match , respond with SMSG_AUTH_FAIL" << username << "!=" << ExpectedUsername << "\n";
+        WorldPacket authfail(SMSG_AUTH_FAIL);
+        session->SendPacket(authfail);
+        return;
+    }
 }
+
+void World::Handle_CMSG_AUTH_CHALLENGE(
+    std::shared_ptr<WorldSession> session,
+    WorldPacket& pkt)
+{
+    std::string username;
+    std::string clientHash;
+
+    pkt >> username >> clientHash;
+
+    uint64_t serverSalt = session->GetAuthSalt();
+
+    std::cout << "[Auth] Challenge received from "
+        << username << "\n";
+
+    if (username != "testplayer")
+    {
+        WorldPacket fail(SMSG_AUTH_CHALLENGE_FAIL);
+
+        std::string reason = "Invalid Username";
+
+        fail << reason;
+
+        session->SendPacket(fail);
+
+        return;
+    }
+
+    std::string expectedHash =
+        GenerateAuthHash(
+            "password123",
+            serverSalt
+        );
+
+    std::cout << "[Auth] ClientHash: "
+        << clientHash << "\n";
+
+    std::cout << "[Auth] ExpectedHash: "
+        << expectedHash << "\n";
+
+    if (clientHash != expectedHash)
+    {
+        WorldPacket fail(SMSG_AUTH_CHALLENGE_FAIL);
+
+        std::string reason = "Invalid Password";
+
+        fail << reason;
+
+        session->SendPacket(fail);
+
+        return;
+    }
+
+    std::cout << "[Auth] SUCCESS\n";
+
+    session->SetAuthenticated(true);
+
+    session->GetPlayer()->characterName_ = username;
+
+    WorldPacket success(SMSG_AUTH_CHALLENGE);
+
+    success << username;
+
+    session->SendPacket(success);
+}
+
+
+
+std::string World::SHA256String(const std::string& Input)
+{
+    {
+        unsigned char Hash[SHA256_DIGEST_LENGTH];
+
+        SHA256(
+            reinterpret_cast<const unsigned char*>(Input.c_str()),
+            Input.size(),
+            Hash
+        );
+
+        std::stringstream ss;
+
+        for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i)
+        {
+            ss << std::hex
+                << std::setw(2)
+                << std::setfill('0')
+                << (int)Hash[i];
+        }
+
+        return ss.str();
+    }
+}
+
+
 void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
     float x = 0, y = 0, z = 0, yaw = 0, pitch = 0, roll = 0;
     pkt >> x >> y >> z >> yaw >> pitch >> roll;                    
@@ -184,5 +320,6 @@ void World::Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket 
     WorldPacket Newpkt(SMSG_PONG);
     WorldSessionMgr::Instance().SendPacketToSession(session, Newpkt);
 }
+
 
 

@@ -14,6 +14,25 @@
 // For std::bit_cast (C++20)
 #include <bit>
 
+inline uint64_t HostToNetwork64(uint64_t value)
+{
+#if defined(_WIN32)
+    return _byteswap_uint64(value);
+#else
+    return htobe64(value);
+#endif
+}
+
+inline uint64_t NetworkToHost64(uint64_t value)
+{
+#if defined(_WIN32)
+    return _byteswap_uint64(value);
+#else
+    return be64toh(value);
+#endif
+}
+
+
 class WorldPacket
 {
 public:
@@ -58,11 +77,30 @@ public:
             const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&value);
             m_data.insert(m_data.end(), ptr, ptr + sizeof(T));
         }
+        else if constexpr (sizeof(T) == 8)
+        {
+            uint64_t swapped =
+                HostToNetwork64(static_cast<uint64_t>(value));
+
+            const uint8_t* ptr =
+                reinterpret_cast<const uint8_t*>(&swapped);
+
+            m_data.insert(
+                m_data.end(),
+                ptr,
+                ptr + sizeof(uint64_t)
+            );
+        }
         else
         {
-            // 64-bit and others - no endian swap for now
-            const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&value);
-            m_data.insert(m_data.end(), ptr, ptr + sizeof(T));
+            const uint8_t* ptr =
+                reinterpret_cast<const uint8_t*>(&value);
+
+            m_data.insert(
+                m_data.end(),
+                ptr,
+                ptr + sizeof(T)
+            );
         }
         return *this;
     }
@@ -97,22 +135,49 @@ public:
         else if constexpr (std::is_floating_point_v<T>)
         {
             uint32_t bits = 0;
-            std::memcpy(&bits, m_data.data() + m_readPos, sizeof(uint32_t));
+
+            std::memcpy(
+                &bits,
+                m_data.data() + m_readPos,
+                sizeof(uint32_t)
+            );
+
             m_readPos += sizeof(uint32_t);
 
             bits = ntohl(bits);
+
             value = std::bit_cast<T>(bits);
         }
         else
         {
-            std::memcpy(&value, m_data.data() + m_readPos, sizeof(T));
+            std::memcpy(
+                &value,
+                m_data.data() + m_readPos,
+                sizeof(T)
+            );
+
             m_readPos += sizeof(T);
 
             if constexpr (sizeof(T) == 2)
-                value = ntohs(static_cast<uint16_t>(value));
+            {
+                value = ntohs(
+                    static_cast<uint16_t>(value)
+                );
+            }
             else if constexpr (sizeof(T) == 4)
-                value = ntohl(static_cast<uint32_t>(value));
+            {
+                value = ntohl(
+                    static_cast<uint32_t>(value)
+                );
+            }
+            else if constexpr (sizeof(T) == 8)
+            {
+                value = NetworkToHost64(
+                    static_cast<uint64_t>(value)
+                );
+            }
         }
+
         return *this;
     }
 

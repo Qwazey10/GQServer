@@ -12,6 +12,7 @@
 #include "WorldSession.h"
 #include "NetworkSocketMgr/concurrentqueue.h"
 #include "Opcodes/Opcodes.h"
+#include <openssl/rand.h>
 
 
 
@@ -37,11 +38,41 @@ private:
     void RegisterOpcodeHandlers();
 
 
+    uint64_t GenerateSecureSalt()
+    {
+        uint64_t Salt = 0;
+
+        RAND_bytes(
+            reinterpret_cast<unsigned char*>(&Salt),
+            sizeof(Salt)
+        );
+
+        return Salt;
+    }
+
+    std::string GenerateAuthHash(const std::string& Password, uint64_t Salt)
+    {
+        std::string Combined =
+            Password + std::to_string(Salt);
+
+        return SHA256String(Combined);
+    }
+
+    std::string SHA256String(const std::string& Input);
 
     void HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
 
     static void Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
-    void Handle_ClientAuthRequest(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+    void Handle_CMSG_AUTH(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+    void Handle_CMSG_AUTH_CHALLENGE(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+    
+
+/*    CMSG_AUTH = 0x0001, // Authcode the client sends to request the password Hash
+        SMSG_AUTH = 0x0002, // AuthCode the server sends which will contain the Hash the client will salt. 
+
+        CMSG_AUTH_CHALLENGE = 0x0003, // Auth code the client will send containing password + hash
+        SMSG_AUTH_CHALLENGE = 0x0004, // Authcode the server will send telling the client authentication was successful. 
+        SMSG_AUTH_CHALLENGE_FAIL = 0x0005, // Authcode the server will send if the client authentication FAILED.*/
 
     float Distance(const Position& a, const Position& b)
     {

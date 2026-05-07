@@ -21,12 +21,20 @@ public:
     int GetPlayerId() const { return m_playerId; }
     std::shared_ptr<Player> GetPlayer() { return m_player; }
 
+    bool IsAuthenticated() const { return m_bAuthenticated; }
+    void SetAuthenticated(bool val) { m_bAuthenticated = val; }
+
+    uint64_t GetAuthSalt() const { return m_authSalt; }
+    void SetAuthSalt(uint64_t salt) { m_authSalt = salt; }
 
 
 
 private:
     void ReadHeader();
     void ReadPayload(uint16_t payloadSize);
+
+    bool m_bAuthenticated = false;
+    uint64_t m_authSalt = 0;
 
     asio::ip::tcp::socket m_socket;
     int m_playerId = -1;
