@@ -24,7 +24,7 @@ int main() {
         TimeManager::Instance().Initialize();
 
         std::cout << " MAIN -- Starting NetworkSocketMgr...\n";
-        NetworkSocketMgr::Instance().StartListening("127.0.0.1", 12345, io_context);
+        NetworkSocketMgr::Instance().StartListening("0.0.0.0", 12345, io_context);
         std::cout << "MAIN -- NetworkSocketMgr started successfully.\n";
 
         std::cout << "MAIN -- Starting World thread...\n";

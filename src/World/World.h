@@ -38,6 +38,60 @@ private:
     void RegisterOpcodeHandlers();
 
 
+    //Major O(n)2 jobs, these will be thread pools.
+  
+    //Calculate Visibility Sets. 
+    void CalculateInVisibleRange_Players();
+    void SendPlayerEntityUpdates();
+    //Calculate Visibilty of Objects in range of players.
+    void CalculateInVisibleRange_Objects();
+    //Calculate Visibility Sets for Creatures in range of Players.
+    void CalculateInVisibleRange_Creatures();
+
+    //Outgoing Packet Functions
+
+    //Send out all of the packet updates
+
+    void SendPrimaryTickUpdates();
+    void SendPlayerUpdates();
+    void SendCreatureUpdates();
+    void SendObjectUpdates();
+     
+
+    void HandlePlayerVisibility(std::shared_ptr<Player> player);
+
+
+    void HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+
+    void Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+    void Handle_CMSG_AUTH(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+    void Handle_CMSG_AUTH_CHALLENGE(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+
+
+    //Send SMSG Functions
+    
+    // Server Opcode to indicate when a client needs to spawn another player Entity. 
+    void Send_SMSG_PLAYER_ENTITY_SPAWN(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer);
+    void Send_SMSG_PLAYER_ENTITY_DESPAWN(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer);
+
+    void Send_SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> TargetPlayer);
+
+    void Send_SMSG_OBJECT_SPAWN(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer);
+    void Send_SMSG_OBJECT_DESPAWN(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer);
+
+    void Send_SMSG_OBJECT_UPDATE(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer);
+
+   
+
+
+    float Distance(const Position& a, const Position& b)
+    {
+        float dx = a.x - b.x;
+        float dy = a.y - b.y;
+        float dz = a.z - b.z;
+        return std::sqrt(dx*dx + dy*dy + dz*dz);
+    }
+
     uint64_t GenerateSecureSalt()
     {
         uint64_t Salt = 0;
@@ -59,28 +113,6 @@ private:
     }
 
     std::string SHA256String(const std::string& Input);
-
-    void HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
-
-    static void Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
-    void Handle_CMSG_AUTH(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
-    void Handle_CMSG_AUTH_CHALLENGE(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
-    
-
-/*    CMSG_AUTH = 0x0001, // Authcode the client sends to request the password Hash
-        SMSG_AUTH = 0x0002, // AuthCode the server sends which will contain the Hash the client will salt. 
-
-        CMSG_AUTH_CHALLENGE = 0x0003, // Auth code the client will send containing password + hash
-        SMSG_AUTH_CHALLENGE = 0x0004, // Authcode the server will send telling the client authentication was successful. 
-        SMSG_AUTH_CHALLENGE_FAIL = 0x0005, // Authcode the server will send if the client authentication FAILED.*/
-
-    float Distance(const Position& a, const Position& b)
-    {
-        float dx = a.x - b.x;
-        float dy = a.y - b.y;
-        float dz = a.z - b.z;
-        return std::sqrt(dx*dx + dy*dy + dz*dz);
-    }
 
 
     void InitDB();

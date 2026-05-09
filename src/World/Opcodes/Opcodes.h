@@ -3,6 +3,7 @@
 #ifndef GQUESTSERVER_OPCODES_H
 #define GQUESTSERVER_OPCODES_H
 #pragma once
+#pragma once
 #include <cstdint>
 
 
@@ -41,37 +42,35 @@ enum Opcodes : uint16_t {
 	CMSG_UPDATE_PLAYER_LOCATION_ROTATION = 0x0016, // Client Opcode send when the client is moving updates position 
 	SMSG_UPDATE_PLAYER_LOCATION_ROTATION = 0x0017, // Server Opcode sent to clients when the clients position is suspect or falls out of bounds, teleport etc. 
 
-
 	//Other Player Movement Opcodes 
-	SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION = 0x0018,
-
 	//Other Player Spawn an Despawn their Actor/Pawns on relative clients. 
-	SMSG_PLAYER_SPAWN = 0x0019, // Server Message telling relative clients to spawn in a player actor, things like appearance etc. 
-	SMSG_PLAYER_DESPAWN = 0x0020,//Server message telling relative clients to despawn an assigned player actor. 
+	SMSG_PLAYER_ENTITY_SPAWN = 0x0018, // Server Message telling relative clients to spawn in a player actor, things like appearance etc. 
+	SMSG_PLAYER_ENTITY_DESPAWN = 0x0019,//Server message telling relative clients to despawn an assigned player actor. 
 
-	CMSG_REQUEST_CHARACTER_LOGIN_INFO = 0x0021, // Opcode sent by the player requesting character information prior to loading in the character
-	SMSG_REQUEST_CHARACTER_LOGIN_INFO = 0x0022, // Opcode sent by the server carrying all of the login related information
+	SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION = 0x0020, // Opcode that will update player location
 
 	//Spawn - Despawn Relative Game Objects for the server. Interactables etc. 
-	SMSG_OBJECT_SPAWN = 0x0023, //Opcode telling the client to spawn in a Game Object 
-	SMSG_OBJECT_DEPAWN = 0x0024, //Opcode telling the client to de-spawn a Game Object
-	SMSG_OBJECT_UPDATE = 0x0025, //Opcode telling the client to update the state of a Game Object. 
+	SMSG_OBJECT_SPAWN = 0x0021, //Opcode telling the client to spawn in a Game Object 
+	SMSG_OBJECT_DEPAWN = 0x0022, //Opcode telling the client to de-spawn a Game Object
+	SMSG_OBJECT_UPDATE = 0x0023, //Opcode telling the client to update the state of a Game Object. 
 
 	//Chat Opcodes
-	CMSG_CHAT_SAY = 0x0026, // Opcode for the clients chat requset
-	CMSG_CHAT_SHOUT = 0x0027, // Opcode for the client to request a shout
-	CMSG_CHAT_GUILD = 0x0028, // Opcode for the client to request a Guild Message
-	CMSG_CHAT_TELL = 0x0029, // Opcode for the client to request a tell message
+	CMSG_CHAT_SAY = 0x0024, // Opcode for the clients chat requset
+	CMSG_CHAT_SHOUT = 0x0025, // Opcode for the client to request a shout
+	CMSG_CHAT_GUILD = 0x0026, // Opcode for the client to request a Guild Message
+	CMSG_CHAT_TELL = 0x0027, // Opcode for the client to request a tell message
 
-	SMSG_CHAT_SAY = 0x0030, //Opcode for reporting say messages
-	SMSG_CHAT_SHOUT = 0x0031, // Opcode for reporting relative shout messages
-	SMSG_CHAT_GUILD = 0x0032, // Opcode for reporting relative guild messages
-	SMSG_CHAT_TELL = 0x0033, // Opcode for reporting relative guild messages
+	SMSG_CHAT_SAY = 0x0028, //Opcode for reporting say messages
+	SMSG_CHAT_SHOUT = 0x0029, // Opcode for reporting relative shout messages
+	SMSG_CHAT_GUILD = 0x0030, // Opcode for reporting relative guild messages
+	SMSG_CHAT_TELL = 0x0031, // Opcode for reporting relative guild messages
 
-	SMSG_SEND_SERVER_TIME = 0x0034 // Opcode for the server to report server time to all players 
-
-	
+	SMSG_SEND_SERVER_TIME = 0x0032 // Opcode for the server to report server time to all players 
 };
+
+
+
+
 
 
 #endif //GQUESTSERVER_OPCODES_H

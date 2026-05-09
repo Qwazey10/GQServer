@@ -33,15 +33,24 @@ void WorldSessionMgr::BroadcastPacket(const WorldPacket& pkt, int excludePlayerI
     }
 }
 
-
-void WorldSessionMgr::PingAllConnectedPlayers()
+std::vector<std::shared_ptr<WorldSession>> WorldSessionMgr::CopySessions()
 {
+    //Create Copy Vector
     std::vector<std::shared_ptr<WorldSession>> sessionsCopy;
 
     {
+        //Lock Sessions Mutex
         std::lock_guard<std::mutex> lock(m_mutex);
         sessionsCopy = m_sessions; // copy
     }
+    return sessionsCopy;
+}
+
+
+void WorldSessionMgr::PingAllConnectedPlayers()
+{
+    //Copy Sessions 
+    std::vector<std::shared_ptr<WorldSession>> sessionsCopy = CopySessions();
 
     uint32_t timestamp = static_cast<uint32_t>(std::time(nullptr));
 
@@ -60,8 +69,10 @@ void WorldSessionMgr::PingAllConnectedPlayers()
 
 std::shared_ptr<WorldSession> WorldSessionMgr::GetSessionByPlayerID(int playerId) {
 
-    std::lock_guard<std::mutex> lock(m_mutex);
-    for (const auto& session : m_sessions) {
+    std::vector<std::shared_ptr<WorldSession>> sessionsCopy = CopySessions();
+
+   
+    for (const auto& session : sessionsCopy) {
         if (session->GetPlayerId() == playerId) {
             return session;
         }

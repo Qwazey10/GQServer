@@ -17,35 +17,21 @@ struct Position {
 };
 
 struct Rotation {
-    float x = 0.0f, y = 0.0f, z = 0.0f;
+    float Pitch = 0.0f, Yaw = 0.0f, Roll = 0.0f;
 };
 
 class Player {
 
 public:
 
-    Player(int id) : m_id(id) {}
-
-    int GetId() const { return m_id; }
-    const Position& GetPosition() const { return m_position; }
-    void SetPosition(float x, float y, float z) {
-        m_position.x = x; m_position.y = y; m_position.z = z;
-    }
-
-    const Rotation& GetRotation() const { return m_rotation; }
-    void SetRotation(float pitch, float yaw, float roll) {
-        m_rotation.x = pitch; m_rotation.y = yaw; m_rotation.z = roll;
-    }
-
+    //Character Attributes
     int m_id = -1;
     int zoneId_ = 1;
+    std::string characterName_;
     Position m_position;
     Rotation m_rotation;
 
-    std::unordered_set<int> m_inRangePlayers;
-    std::mutex m_inRangeMutex;
 
-    std::string characterName_;
     int level_;
     int exp_;
     int hp_;
@@ -60,7 +46,6 @@ public:
     int int_;
     int vit_;
     int agi_;
-    int luk_;
 
 
     int classID_;
@@ -74,6 +59,53 @@ public:
     float  WorldZ_;
     std::vector<int> inventory_;
     std::vector<int> equipment_;
+
+    Player(int id) : m_id(id) {}
+    const std::string GetName(){ return characterName_; }
+
+    int GetId() const { return m_id; }
+    const Position& GetPosition() const { return m_position; }
+    void SetPosition(float x, float y, float z) {
+        m_position.x = x; m_position.y = y; m_position.z = z;
+    }
+
+    const Rotation& GetRotation() const { return m_rotation; }
+    void SetRotation(float pitch, float yaw, float roll) {
+        m_rotation.Pitch = pitch; m_rotation.Yaw = yaw; m_rotation.Roll = roll;
+    }
+
+    void SetCacheInVisibilityRange(const std::unordered_set<int>& NewCacheSet)
+    {
+        std::lock_guard<std::mutex> lock(m_cache_inRangePlayers);
+        cache_inRangePlayers = NewCacheSet;
+    }
+
+    void SetInVisibilityRange(const std::unordered_set<int>& NewVisSet)
+    {
+        std::lock_guard<std::mutex> lock(m_inRangeMutex);
+        inRangePlayers = NewVisSet;
+    }
+
+    std::unordered_set<int> GetCacheInVisibilityRange()
+    {
+        std::lock_guard<std::mutex> lock(m_cache_inRangePlayers);
+        return cache_inRangePlayers;
+    }
+
+    std::unordered_set<int> GetInVisibilityRange()
+    {
+        std::lock_guard<std::mutex> lock(m_inRangeMutex);
+        return inRangePlayers;
+    }
+
+private:
+
+    std::mutex m_inRangeMutex;
+    std::unordered_set<int> inRangePlayers;
+
+    std::mutex m_cache_inRangePlayers;
+    std::unordered_set<int> cache_inRangePlayers;
+
 };
 
 

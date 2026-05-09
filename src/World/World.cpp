@@ -49,35 +49,76 @@ void World::EnqueuePacket(std::shared_ptr<WorldSession> session, WorldPacket pkt
 }
 
 
-void World::Run() {
-    while (m_running) {
+void World::Run()
+{
+    constexpr int TICK_RATE_MS = 100;
+
+    while (m_running)
+    {
+        auto TickStart = std::chrono::steady_clock::now();
+
+        // Process incoming packets
         QueuedPacket qp;
 
-        while (m_concurrentqueue.try_dequeue(qp)) {
+        while (m_concurrentqueue.try_dequeue(qp))
+        {
             auto it = m_handlers.find(qp.packet.GetOpcode());
 
-            if (it != m_handlers.end()) {
-                try {
+            if (it != m_handlers.end())
+            {
+                try
+                {
                     it->second(qp.session, qp.packet);
                 }
-                catch (const std::exception& e) {
-                    std::cout << "Packet handler exception: " << e.what() << "\n";
+                catch (const std::exception& e)
+                {
+                    std::cout << "Packet handler exception: "
+                        << e.what() << "\n";
+
                     qp.session->Disconnect();
                 }
-                catch (...) {
+                catch (...)
+                {
                     std::cout << "Unknown packet handler exception\n";
                     qp.session->Disconnect();
                 }
-            } else {
+            }
+            else
+            {
                 std::cout << "Unknown opcode: 0x"
-                          << std::hex << qp.packet.GetOpcode()
-                          << std::dec << "\n";
+                    << std::hex
+                    << qp.packet.GetOpcode()
+                    << std::dec
+                    << "\n";
             }
         }
 
+        // World Systems
         Update();
+
         TimeManager::Instance().Update();
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+
+        // Measure elapsed
+        auto TickEnd = std::chrono::steady_clock::now();
+
+        auto Elapsed =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                TickEnd - TickStart
+            );
+
+        auto SleepTime =
+            std::chrono::milliseconds(TICK_RATE_MS) - Elapsed;
+
+        if (SleepTime.count() > 0)
+        {
+            std::this_thread::sleep_for(SleepTime);
+        }
+        else
+        {
+            std::cout << "[World] Tick overloaded by "
+                << -SleepTime.count()
+                << " ms\n";
+        }
     }
 }
 
@@ -94,75 +135,11 @@ void World::RegisterOpcodeHandlers() {
 
 
 void World::Update() {
-    const float VISIBILITY_RANGE = 500.0f;
 
-    //Get the array of connected sessions
-    auto sessions = WorldSessionMgr::Instance().GetSessions();
-
-    for (auto& sessionA : sessions)
-    {
-        auto playerA = sessionA->GetPlayer();
-        if (!playerA)
-            continue;
-
-        std::unordered_set<int> newSet;
-
-        for (auto& sessionB : sessions)
-        {
-            if (sessionA == sessionB)
-                continue;
-
-            auto playerB = sessionB->GetPlayer();
-            if (!playerB)
-                continue;
-
-            if (playerA->zoneId_ != playerB->zoneId_)
-                continue;
-
-            float dist = Distance(playerA->GetPosition(), playerB->GetPosition());
-
-            if (dist <= VISIBILITY_RANGE)
-                newSet.insert(playerB->GetId());
-        }
-
-        // 🔒 Lock player's visibility set
-        std::lock_guard<std::mutex> lock(playerA->m_inRangeMutex);
-
-        // --- ENTERED RANGE ---
-        for (int id : newSet)
-        {
-            if (!playerA->m_inRangePlayers.count(id))
-            {
-                auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerID(id);
-                if (!targetSession) continue;
-
-                auto targetPlayer = targetSession->GetPlayer();
-
-                std::cout << "[World] Player " << playerA->GetId() << " entered range of player " << targetPlayer->GetId() << "\n";
-                WorldPacket spawn(SMSG_PLAYER_SPAWN);
-                spawn << targetPlayer->GetId()
-                      << targetPlayer->GetPosition().x
-                      << targetPlayer->GetPosition().y
-                      << targetPlayer->GetPosition().z;
-
-                sessionA->SendPacket(spawn);
-            }
-        }
-
-        // --- LEFT RANGE ---
-        for (int id : playerA->m_inRangePlayers)
-        {
-            if (!newSet.count(id))
-            {
-                WorldPacket despawn(SMSG_PLAYER_DESPAWN);
-                despawn << id;
-                sessionA->SendPacket(despawn);
-            }
-        }
-
-        // Replace old set
-        playerA->m_inRangePlayers = std::move(newSet);
-    }
+    //Thread Pool this later
+    CalculateInVisibleRange_Players();
+    //Send PlayerUpdates
+    SendPlayerEntityUpdates();
 }
 
 
@@ -322,4 +299,200 @@ void World::Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket 
 }
 
 
+void World::CalculateInVisibleRange_Players() {
 
+    constexpr float VISIBILITY_RANGE = 100000.0f;
+
+    auto sessionsCopy = WorldSessionMgr::Instance().CopySessions();
+
+    std::vector<std::shared_ptr<Player>> players;
+
+    players.reserve(sessionsCopy.size());
+
+    for (auto& session : sessionsCopy)
+    {
+        auto player = session->GetPlayer();
+
+        if (player)
+        {
+            players.push_back(player);
+        }
+    }
+
+    for (auto& playerA : players)
+    {
+        std::unordered_set<int> NewVisibleSet;
+
+        for (auto& playerB : players)
+        {
+            if (playerA == playerB)
+                continue;
+
+            if (playerA->zoneId_ != playerB->zoneId_)
+                continue;
+
+            float dist =
+                Distance(
+                    playerA->GetPosition(),
+                    playerB->GetPosition()
+                );
+
+            if (dist <= VISIBILITY_RANGE)
+            {
+                NewVisibleSet.insert(playerB->GetId());
+            }
+        }
+
+        playerA->SetCacheInVisibilityRange(NewVisibleSet);
+    }
+}
+
+void World::SendPlayerEntityUpdates()
+{
+    auto sessions = WorldSessionMgr::Instance().CopySessions();
+
+    for (auto& session : sessions)
+    {
+        if (!session)
+            continue;
+
+        auto player = session->GetPlayer();
+
+        if (!player)
+            continue;
+
+        // Copy sets safely
+        auto CurrentSet = player->GetInVisibilityRange();
+        auto CacheSet = player->GetCacheInVisibilityRange();
+
+        //
+        // ENTERED RANGE
+        //
+        for (int id : CacheSet)
+        {
+            if (!CurrentSet.count(id))
+            {
+                auto targetSession =
+                    WorldSessionMgr::Instance().GetSessionByPlayerID(id);
+
+                if (!targetSession)
+                    continue;
+
+                auto targetPlayer = targetSession->GetPlayer();
+
+                if (!targetPlayer)
+                    continue;
+
+                Send_SMSG_PLAYER_ENTITY_SPAWN(
+                    session,
+                    targetPlayer
+                );
+            }
+        }
+
+        //
+        // LEFT RANGE
+        //
+        for (int id : CurrentSet)
+        {
+            if (!CacheSet.count(id))
+            {
+                auto targetSession =
+                    WorldSessionMgr::Instance().GetSessionByPlayerID(id);
+
+                if (!targetSession)
+                    continue;
+
+                auto targetPlayer = targetSession->GetPlayer();
+
+                if (!targetPlayer)
+                    continue;
+
+                Send_SMSG_PLAYER_ENTITY_DESPAWN(
+                    session,
+                    targetPlayer
+                );
+            }
+        }
+
+        //
+        // MOVEMENT UPDATES
+        //
+        for (int id : CacheSet)
+        {
+            auto targetSession =
+                WorldSessionMgr::Instance().GetSessionByPlayerID(id);
+
+            if (!targetSession)
+                continue;
+
+            auto targetPlayer = targetSession->GetPlayer();
+
+            if (!targetPlayer)
+                continue;
+
+            Send_SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION(session, targetPlayer);
+
+    
+        }
+
+        //
+        // COMMIT CACHE -> ACTIVE
+        //
+        player->SetInVisibilityRange(CacheSet);
+    }
+}
+
+void World::CalculateInVisibleRange_Objects() {
+    //Do the same for this loop. Should i create a separate creature manager class
+    //How does azerothcore handle creature and AI structure wise.
+
+}
+void World::CalculateInVisibleRange_Creatures() {
+    //Same for players but do a loop over possible creatures
+}
+void World::Send_SMSG_PLAYER_ENTITY_SPAWN(
+    std::shared_ptr<WorldSession> session,
+    std::shared_ptr<Player> targetPlayer)
+{
+    WorldPacket spawn(SMSG_PLAYER_ENTITY_SPAWN);
+
+    spawn << targetPlayer->GetId()
+        << targetPlayer->GetName()
+        << targetPlayer->GetPosition().x
+        << targetPlayer->GetPosition().y
+        << targetPlayer->GetPosition().z
+        << targetPlayer->GetRotation().Pitch
+        << targetPlayer->GetRotation().Yaw
+        << targetPlayer->GetRotation().Roll;
+
+    session->SendPacket(spawn);
+}
+
+void World::Send_SMSG_PLAYER_ENTITY_DESPAWN(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer)
+{
+
+    int TargetPlayerID = targetPlayer->GetId();
+    WorldPacket despawn(SMSG_PLAYER_ENTITY_DESPAWN);
+    despawn << TargetPlayerID;
+    session->SendPacket(despawn);
+
+}
+
+void World::Send_SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> TargetPlayer)
+{
+
+    uint64_t timestamp; // add a timestamp here i am not sure which int or std:chrono to use
+    WorldPacket LocationUpdatePacket(SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION);
+    LocationUpdatePacket << TargetPlayer->GetId()
+        << TargetPlayer->GetName()
+        << TargetPlayer->GetPosition().x
+        << TargetPlayer->GetPosition().y
+        << TargetPlayer->GetPosition().z
+        << TargetPlayer->GetRotation().Pitch
+        << TargetPlayer->GetRotation().Yaw
+        << TargetPlayer->GetRotation().Roll
+        << timestamp;
+
+        session->SendPacket(LocationUpdatePacket);
+}

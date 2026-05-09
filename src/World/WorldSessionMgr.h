@@ -13,6 +13,8 @@ public:
     void RemoveSessionBySessionPtr(std::shared_ptr<WorldSession> session);
     void BroadcastPacket(const WorldPacket& pkt, int excludePlayerId = -1);
 
+    std::vector<std::shared_ptr<WorldSession>> CopySessions();
+
     void PingAllConnectedPlayers();
 
     std::shared_ptr<WorldSession> GetSessionByPlayerID(int playerId);
