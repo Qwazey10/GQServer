@@ -61,9 +61,15 @@ add_executable(GQuestServer
 
 find_package(OpenSSL REQUIRED)
 
+
+# Windows-only socket libraries
+if (WIN32)
+    target_link_libraries(GQuestServer PRIVATE
+            ws2_32
+            mswsock
+    )
+endif()
 target_link_libraries(GQuestServer PRIVATE
-    ws2_32
-    mswsock
     OpenSSL::SSL
     OpenSSL::Crypto
 )
