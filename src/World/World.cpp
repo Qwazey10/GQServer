@@ -9,7 +9,7 @@
 
 #include "TimeManager/TimeManager.h"
 #include <random>
-
+#include <cfloat>
 #include <openssl/sha.h>
 #include <sstream>
 #include <iomanip>
@@ -134,12 +134,89 @@ void World::RegisterOpcodeHandlers() {
 
 
 
-void World::Update() {
+void World::Update()
+{
+    //
+    // PROFILER STATE
+    //
+    static int TickCounter = 0;
 
-    //Thread Pool this later
+    static double MinMs = DBL_MAX;
+    static double MaxMs = 0.0;
+    static double TotalMs = 0.0;
+
+    //
+    // START TIMER
+    //
+    auto StartTime = std::chrono::high_resolution_clock::now();
+
+    //
+    // WORLD SYSTEMS
+    //
+
+    //Calculate O(n2) Player Visibility Range
     CalculateInVisibleRange_Players();
-    //Send PlayerUpdates
+
+    // Spawn / Despawn visibility updates
     SendPlayerEntityUpdates();
+
+    // Movement replication
+    SendMovementUpdates();
+
+    //
+    // END TIMER
+    //
+    auto EndTime = std::chrono::high_resolution_clock::now();
+
+    double ElapsedMs =
+        std::chrono::duration<double, std::milli>(
+            EndTime - StartTime
+        ).count();
+
+    //
+    // TRACK STATS
+    //
+    TickCounter++;
+
+    TotalMs += ElapsedMs;
+
+    if (ElapsedMs < MinMs)
+    {
+        MinMs = ElapsedMs;
+    }
+
+    if (ElapsedMs > MaxMs)
+    {
+        MaxMs = ElapsedMs;
+    }
+
+    //
+    // PRINT EVERY 50 TICKS
+    //
+    constexpr int PrintInterval = 50;
+
+    if (TickCounter >= PrintInterval)
+    {
+        double AverageMs = TotalMs / TickCounter;
+
+        std::cout
+            << "\n========== WORLD UPDATE PROFILER ==========\n"
+            << "Ticks Sampled : " << TickCounter << "\n"
+            << "Min Tick (ms) : " << MinMs << "\n"
+            << "Max Tick (ms) : " << MaxMs << "\n"
+            << "Avg Tick (ms) : " << AverageMs << "\n"
+            << "===========================================\n"
+            << std::endl;
+
+        //
+        // RESET SAMPLE WINDOW
+        //
+        TickCounter = 0;
+
+        MinMs = DBL_MAX;
+        MaxMs = 0.0;
+        TotalMs = 0.0;
+    }
 }
 
 
@@ -273,22 +350,17 @@ std::string World::SHA256String(const std::string& Input)
 
 
 void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldPacket& pkt) {
-    float x = 0, y = 0, z = 0, yaw = 0, pitch = 0, roll = 0;
-    pkt >> x >> y >> z >> yaw >> pitch >> roll;                    
+    float x = 0, y = 0, z = 0, yaw = 0;
+    pkt >> x >> y >> z >> yaw;                    
     
     session->GetPlayer()->SetPosition(x, y, z);
-    session->GetPlayer()->SetRotation(pitch, yaw, roll);
+    session->GetPlayer()->SetRotation(yaw);
 
 
-    std::cout << "[World] Player " << session->GetPlayerId()
+
+    /*std::cout << "[World] Player " << session->GetPlayerId()
         << " moved to (" << x << ", " << y << ", " << z << ")"
-        " Rot (" << yaw << "," << pitch << "," << roll << ")\n";
-
-    /*// Broadcast to others
-    WorldPacket broadcast(SMSG_LOCATION_UPDATE);
-    broadcast << session->GetPlayerId() << x << y << z;*/
-
-   // WorldSessionMgr::Instance().BroadcastPacket(broadcast, session->GetPlayerId());
+        " Rotation (" << yaw  << ")\n";*/
 }
 
 void World::Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket &pkt) {
@@ -301,7 +373,7 @@ void World::Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket 
 
 void World::CalculateInVisibleRange_Players() {
 
-    constexpr float VISIBILITY_RANGE = 100000.0f;
+    constexpr float VISIBILITY_RANGE = 10000.0f;
 
     auto sessionsCopy = WorldSessionMgr::Instance().CopySessions();
 
@@ -414,34 +486,73 @@ void World::SendPlayerEntityUpdates()
                 );
             }
         }
-
-        //
-        // MOVEMENT UPDATES
-        //
-        for (int id : CacheSet)
-        {
-            auto targetSession =
-                WorldSessionMgr::Instance().GetSessionByPlayerID(id);
-
-            if (!targetSession)
-                continue;
-
-            auto targetPlayer = targetSession->GetPlayer();
-
-            if (!targetPlayer)
-                continue;
-
-            Send_SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION(session, targetPlayer);
-
-    
-        }
-
         //
         // COMMIT CACHE -> ACTIVE
         //
         player->SetInVisibilityRange(CacheSet);
     }
 }
+
+void World::SendMovementUpdates()
+{
+    auto SessionsCopy = WorldSessionMgr::Instance().CopySessions();
+
+    for (auto& session : SessionsCopy)
+    {
+        if (!session)
+        {
+            continue;
+        }
+
+        auto player = session->GetPlayer();
+
+        if (!player)
+        {
+            continue;
+        }
+
+        // Copy visible player IDs
+        auto VisibilitySet = player->GetInVisibilityRange();
+
+        //
+        // Send movement updates for all visible players
+        //
+        for (int VisiblePlayerId : VisibilitySet)
+        {
+            auto targetSession =
+                WorldSessionMgr::Instance().GetSessionByPlayerID(
+                    VisiblePlayerId
+                );
+
+            if (!targetSession)
+            {
+                continue;
+            }
+
+            auto targetPlayer = targetSession->GetPlayer();
+
+            if (!targetPlayer)
+            {
+                continue;
+            }
+
+            //
+            // Optional optimization:
+            // only send if target player moved
+            //
+            // if (!targetPlayer->HasMovementChanged())
+            // {
+            //     continue;
+            // }
+
+            Send_SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION(
+                session,
+                targetPlayer
+            );
+        }
+    }
+}
+
 
 void World::CalculateInVisibleRange_Objects() {
     //Do the same for this loop. Should i create a separate creature manager class
@@ -462,9 +573,8 @@ void World::Send_SMSG_PLAYER_ENTITY_SPAWN(
         << targetPlayer->GetPosition().x
         << targetPlayer->GetPosition().y
         << targetPlayer->GetPosition().z
-        << targetPlayer->GetRotation().Pitch
-        << targetPlayer->GetRotation().Yaw
-        << targetPlayer->GetRotation().Roll;
+        << targetPlayer->GetRotation(); //Character Yaw
+
 
     session->SendPacket(spawn);
 }
@@ -479,20 +589,36 @@ void World::Send_SMSG_PLAYER_ENTITY_DESPAWN(std::shared_ptr<WorldSession> sessio
 
 }
 
-void World::Send_SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> TargetPlayer)
+void World::Send_SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION(
+    std::shared_ptr<WorldSession> session,
+    std::shared_ptr<Player> TargetPlayer)
 {
+    uint64_t timestamp =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()
+        ).count();
 
-    uint64_t timestamp; // add a timestamp here i am not sure which int or std:chrono to use
-    WorldPacket LocationUpdatePacket(SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION);
-    LocationUpdatePacket << TargetPlayer->GetId()
+    WorldPacket pkt(SMSG_UPDATE_PLAYER_ENTITY_LOCATION_ROTATION);
+
+    pkt << TargetPlayer->GetId()
         << TargetPlayer->GetName()
         << TargetPlayer->GetPosition().x
         << TargetPlayer->GetPosition().y
         << TargetPlayer->GetPosition().z
-        << TargetPlayer->GetRotation().Pitch
-        << TargetPlayer->GetRotation().Yaw
-        << TargetPlayer->GetRotation().Roll
+        << TargetPlayer->GetRotation()
         << timestamp;
 
-        session->SendPacket(LocationUpdatePacket);
+        //Debug Print, don't delete! -M
+/*    std::cout << "[SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION] "
+        << "PlayerID: " << TargetPlayer->GetId()
+        << " | Name: " << TargetPlayer->GetName()
+        << " | Pos: ("
+        << TargetPlayer->GetPosition().x << ", "
+        << TargetPlayer->GetPosition().y << ", "
+        << TargetPlayer->GetPosition().z << ")"
+        << " | Rot: " << TargetPlayer->GetRotation()
+        << " | Timestamp: " << timestamp
+        << std::endl;*/
+
+    session->SendPacket(pkt);
 }

@@ -16,9 +16,6 @@ struct Position {
     float x = 0.0f, y = 0.0f, z = 0.0f;
 };
 
-struct Rotation {
-    float Pitch = 0.0f, Yaw = 0.0f, Roll = 0.0f;
-};
 
 class Player {
 
@@ -29,7 +26,7 @@ public:
     int zoneId_ = 1;
     std::string characterName_;
     Position m_position;
-    Rotation m_rotation;
+    float CharacterYaw;
 
 
     int level_;
@@ -69,9 +66,9 @@ public:
         m_position.x = x; m_position.y = y; m_position.z = z;
     }
 
-    const Rotation& GetRotation() const { return m_rotation; }
-    void SetRotation(float pitch, float yaw, float roll) {
-        m_rotation.Pitch = pitch; m_rotation.Yaw = yaw; m_rotation.Roll = roll;
+    const float& GetRotation() const { return CharacterYaw; }
+    void SetRotation(float yaw) {
+        CharacterYaw = yaw;
     }
 
     void SetCacheInVisibilityRange(const std::unordered_set<int>& NewCacheSet)

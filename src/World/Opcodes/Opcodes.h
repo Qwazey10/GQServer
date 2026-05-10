@@ -47,7 +47,7 @@ enum Opcodes : uint16_t {
 	SMSG_PLAYER_ENTITY_SPAWN = 0x0018, // Server Message telling relative clients to spawn in a player actor, things like appearance etc. 
 	SMSG_PLAYER_ENTITY_DESPAWN = 0x0019,//Server message telling relative clients to despawn an assigned player actor. 
 
-	SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION = 0x0020, // Opcode that will update player location
+	SMSG_UPDATE_PLAYER_ENTITY_LOCATION_ROTATION = 0x0020, // Opcode that will update player location
 
 	//Spawn - Despawn Relative Game Objects for the server. Interactables etc. 
 	SMSG_OBJECT_SPAWN = 0x0021, //Opcode telling the client to spawn in a Game Object 
@@ -65,7 +65,7 @@ enum Opcodes : uint16_t {
 	SMSG_CHAT_GUILD = 0x0030, // Opcode for reporting relative guild messages
 	SMSG_CHAT_TELL = 0x0031, // Opcode for reporting relative guild messages
 
-	SMSG_SEND_SERVER_TIME = 0x0032 // Opcode for the server to report server time to all players 
+
 };
 
 

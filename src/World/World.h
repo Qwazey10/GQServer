@@ -43,6 +43,7 @@ private:
     //Calculate Visibility Sets. 
     void CalculateInVisibleRange_Players();
     void SendPlayerEntityUpdates();
+    void SendMovementUpdates();
     //Calculate Visibilty of Objects in range of players.
     void CalculateInVisibleRange_Objects();
     //Calculate Visibility Sets for Creatures in range of Players.
