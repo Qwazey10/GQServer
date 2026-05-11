@@ -2,6 +2,7 @@
 #include <thread>
 #include "src/NetworkSocketMgr/NetworkSocketMgr.h"
 #include "src/World/World.h"
+#include "src/World/SQL/DatabaseManager.h"
 #include "World/Maps/MapBuilder.h"
 #include "World/TimeManager/TimeManager.h"
 
@@ -19,6 +20,8 @@ int main() {
         auto work = asio::make_work_guard(io_context);
 
         std::cout << "=== GQServer Starting ===\n";
+
+        DatabaseManager::Instance().InitDB();
 
         std::cout << "MAIN -- Initializing TimeManager...\n";
         TimeManager::Instance().Initialize();
