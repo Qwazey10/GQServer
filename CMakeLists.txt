@@ -21,7 +21,11 @@ add_executable(GQuestServer
     src/World/Maps/MapManager.cpp
     src/World/Maps/MapBuilder.cpp
     src/World/TimeManager/TimeManager.cpp
+
     src/World/SQL/DatabaseManager.cpp
+    src/World/SQL/DB/DBWorker.cpp
+    src/World/SQL/DB/DatabasePool.cpp
+
 
     # Recast/Detour sources (only .cpp files)
     src/Recast/DebugUtils/Source/DebugDraw.cpp
@@ -58,11 +62,10 @@ add_executable(GQuestServer
     src/Recast/Recast/Source/RecastMeshDetail.cpp
     src/Recast/Recast/Source/RecastRasterization.cpp
     src/Recast/Recast/Source/RecastRegion.cpp
- "src/World/SQL/DatabaseManager.h" "src/World/SQL/DatabaseManager.cpp")
+    )
 
 find_package(OpenSSL REQUIRED)
-find_package(libpqxx CONFIG REQUIRED)
-
+find_package(unofficial-libmariadb CONFIG REQUIRED)
 
 # Windows-only socket libraries
 if (WIN32)
@@ -70,15 +73,13 @@ if (WIN32)
             ws2_32
             mswsock
     )
-    target_link_libraries(GQuestServer PRIVATE libpqxx::pqxx)
 endif()
 target_link_libraries(GQuestServer PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto
 )
 
-
-target_link_libraries(GQuestServer PRIVATE libpqxx::pqxx)
+target_link_libraries(GQuestServer PRIVATE unofficial::libmariadb)
 
 target_include_directories(GQuestServer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
