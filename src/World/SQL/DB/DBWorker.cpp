@@ -1,4 +1,74 @@
 #include "DBWorker.h"
+#include <thread>
+#include <iostream>
+
+DBWorker::DBWorker(SafeQueue<DBOp>& q,
+    SafeQueue<std::function<void()>>& d,
+    const std::string& h,
+    const std::string& u,
+    const std::string& p,
+    const std::string& database)
+    : queue(q), dispatch(d), host(h), user(u), pass(p), db(database)
+{
+    Connect();
+}
+
+uint64_t DBWorker::NowMs() const
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+bool DBWorker::Connect()
+{
+    conn = mysql_init(nullptr);
+    if (!conn) return false;
+
+    if (!mysql_real_connect(conn, host.c_str(), user.c_str(), pass.c_str(), db.c_str(), 3306, nullptr, 0))
+        return false;
+
+    PrepareStatements();
+    return true;
+}
+
+bool DBWorker::ReconnectWithBackoff()
+{
+    int delay = 1000;
+
+    while (running)
+    {
+        std::cout << "[DB] Reconnecting...\n";
+
+        if (Connect())
+        {
+            std::cout << "[DB] Reconnected\n";
+            return true;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+        delay = std::min(delay * 2, 30000);
+    }
+
+    return false;
+}
+
+void DBWorker::PrepareStatements()
+{
+    stmts.resize((size_t)Stmt::MAX);
+
+    auto p = [&](Stmt id, const char* sql)
+        {
+            auto s = mysql_stmt_init(conn);
+            mysql_stmt_prepare(s, sql, strlen(sql));
+            stmts[(size_t)id] = s;
+        };
+
+    p(Stmt::AUTH_SEL_ACCOUNT_EXISTS, "SELECT username FROM accounts WHERE username=?");
+    p(Stmt::AUTH_INS_ACCOUNT, "INSERT INTO accounts(username) VALUES(?)");
+
+
+
+/*#include "DBWorker.h"
 #include <mysql.h>
 #include <iostream>
 
@@ -10,25 +80,26 @@ DBWorker::DBWorker(SafeQueue<DBJob>& queue,
     : m_queue(queue)
 {
     m_conn = mysql_init(nullptr);
+
     if (!m_conn)
     {
-        std::cerr << "[DBWorker] mysql_init() failed!\n";
+        std::cerr << "[DBWorker] mysql_init failed\n";
         return;
     }
 
-    // ====================== FORCE DISABLE SSL ======================
-    my_bool ssl_disable = 1;
-    mysql_options(m_conn, MYSQL_OPT_SSL_ENFORCE, &ssl_disable);
+    // ✅ Disable SSL enforcement (correct for MariaDB)
+    my_bool ssl_enforce = 0;
+    mysql_options(m_conn, MYSQL_OPT_SSL_ENFORCE, &ssl_enforce);
 
-    // Additional helpful options
+    // Optional: disable cert verification too (safe for local dev)
+    my_bool verify = 0;
+    mysql_options(m_conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &verify);
+
     unsigned int timeout = 10;
     mysql_options(m_conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
 
     mysql_options(m_conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 
-    // Optional: Try to disable reconnect if you get weird issues
-    // my_bool reconnect = 0;
-    // mysql_options(m_conn, MYSQL_OPT_RECONNECT, &reconnect);
 
     std::cout << "[DBWorker] Connecting to " << db
         << " on " << host << ":3306...\n";
@@ -105,4 +176,4 @@ void DBWorker::execute(DBJob& job)
 
     if (job.promise)
         job.promise->set_value(result);
-}
+}*/

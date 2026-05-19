@@ -62,7 +62,7 @@ add_executable(GQuestServer
     src/Recast/Recast/Source/RecastMeshDetail.cpp
     src/Recast/Recast/Source/RecastRasterization.cpp
     src/Recast/Recast/Source/RecastRegion.cpp
-    )
+     "src/World/SQL/DB/DBResult.h" "src/World/SQL/DB/PreparedStatements.h" "src/World/SQL/DB/DBOperation.h" "src/World/SQL/DB/QueryResults.h" "src/World/SQL/DB/Field.h" "src/World/SQL/DB/Statements.h")
 
 find_package(OpenSSL REQUIRED)
 find_package(unofficial-libmariadb CONFIG REQUIRED)

@@ -1,22 +1,18 @@
 #pragma once
-
-#include <mysql.h>
+#include <vector>
+#include <string>
 #include <functional>
 #include <future>
-#include <string>
-
-struct DBResult
-{
-    std::vector<std::vector<std::string>> rows;
-};
+#include "Statements.h"
+#include "DBResult.h"
 
 struct DBJob
 {
-    std::string query;
+    PreparedStatements stmt;
 
-    // Optional callback (async result)
+    std::vector<std::string> stringParams;
+    std::vector<int32_t> intParams;
+
     std::function<void(DBResult)> callback;
-
-    // Optional promise (future-based)
     std::shared_ptr<std::promise<DBResult>> promise;
 };
