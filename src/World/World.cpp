@@ -8,6 +8,7 @@
 #include <chrono>
 
 #include "TimeManager/TimeManager.h"
+#include "SQL/DatabaseManager.h"
 #include <random>
 #include <cfloat>
 #include <openssl/sha.h>
@@ -30,10 +31,6 @@ void World::Start() {
     TimeManager::Instance().ScheduleRepeating(10000, []() {
     std::cout << "Repeating every 10s - Ping Clients: " << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;});
     WorldSessionMgr::Instance().PingAllConnectedPlayers();
-
- 
-   
-
 }
 
 void World::Stop() {
@@ -89,7 +86,8 @@ void World::Run()
                     << "\n";
             }
         }
-
+        //Process Database Callbacks
+        DatabaseManager::Instance().ProcessCallbacks();
         // World Systems
         Update();
 
@@ -133,6 +131,8 @@ void World::RegisterOpcodeHandlers() {
 
 void World::Update()
 {
+
+
     //
     // PROFILER STATE
     //

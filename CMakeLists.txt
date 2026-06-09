@@ -4,6 +4,7 @@ project(GQuestServer LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 add_executable(GQuestServer
     main.cpp
 
@@ -21,10 +22,6 @@ add_executable(GQuestServer
     src/World/Maps/MapManager.cpp
     src/World/Maps/MapBuilder.cpp
     src/World/TimeManager/TimeManager.cpp
-
-    src/World/SQL/DatabaseManager.cpp
-    src/World/SQL/DB/DBWorker.cpp
-    src/World/SQL/DB/DatabasePool.cpp
 
 
     # Recast/Detour sources (only .cpp files)
@@ -62,7 +59,15 @@ add_executable(GQuestServer
     src/Recast/Recast/Source/RecastMeshDetail.cpp
     src/Recast/Recast/Source/RecastRasterization.cpp
     src/Recast/Recast/Source/RecastRegion.cpp
-     "src/World/SQL/DB/DBResult.h" "src/World/SQL/DB/PreparedStatements.h" "src/World/SQL/DB/DBOperation.h" "src/World/SQL/DB/QueryResults.h" "src/World/SQL/DB/Field.h" "src/World/SQL/DB/Statements.h")
+
+        ## Database Includes
+        src/World/SQL/DatabaseManager.cpp
+        ## src/World/SQL/DB/DBWorker.cpp
+        src/World/SQL/DB/DatabasePool.cpp
+        src/World/SQL/DB/DatabasePool.h
+        src/World/SQL/DB/DBTypes.h
+
+)
 
 find_package(OpenSSL REQUIRED)
 find_package(unofficial-libmariadb CONFIG REQUIRED)
@@ -74,12 +79,15 @@ if (WIN32)
             mswsock
     )
 endif()
+
 target_link_libraries(GQuestServer PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto
 )
 
 target_link_libraries(GQuestServer PRIVATE unofficial::libmariadb)
+
+
 
 target_include_directories(GQuestServer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src

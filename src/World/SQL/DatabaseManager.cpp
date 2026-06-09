@@ -1,69 +1,44 @@
-
+// DatabaseManager.cpp
 #include "DatabaseManager.h"
+#include "DB/DBTypes.h"
+#include <future>
+#include <iostream>
 
 DatabaseManager& DatabaseManager::Instance()
 {
-    static DatabaseManager i;
-    return i;
+    static DatabaseManager instance;
+    return instance;
 }
-
-void DatabaseManager::Init()
-{
-    auth.Start(2, dispatch, "127.0.0.1", "devgquest", "Apple1", "auth_gquest");
-    chr.Start(2, dispatch, "127.0.0.1", "devgquest", "Apple1", "character_gquest");
-    content.Start(2, dispatch, "127.0.0.1", "devgquest", "Apple1", "content_gquest");
-}
-
-void DatabaseManager::Shutdown()
-{
-    auth.Stop();
-    chr.Stop();
-    content.Stop();
-}
-
-void DatabaseManager::Pump()
-{
-    std::function<void()> fn;
-    while (dispatch.try_pop(fn)) fn();
-}
-
-std::future<QueryResult> DatabaseManager::Query(Stmt stmt, std::function<void(PreparedStatement&)> binder)
-{
-    DBQuery q;
-    q.stmt = stmt;
-
-    binder(q.params);
-
-    auto p = std::make_shared<std::promise<QueryResult>>();
-    q.promise = p;
-
-    auth.Enqueue(q);
-    return p->get_future();
-}
-
-void DatabaseManager::ExecuteTransaction(DBTransaction tx)
-{
-    auth.Enqueue(tx);
-}
-
-void DatabaseManager::HealthCheck()
-{
-    auth.HealthCheck(dispatch, "127.0.0.1", "devgquest", "Apple1", "auth_gquest");
-    chr.HealthCheck(dispatch, "127.0.0.1", "devgquest", "Apple1", "character_gquest");
-    content.HealthCheck(dispatch, "127.0.0.1", "devgquest", "Apple1", "content_gquest");
-}
-
-
-/*#include "DatabaseManager.h"
-#include <memory>
-#include <string>
-#include <iostream>
 
 void DatabaseManager::InitDB()
 {
-    m_authPool.Start(2, "192.168.1.13", "devgquest", "Apple1", "auth_gquest");
-    m_characterPool.Start(2, "192.168.1.13", "devgquest", "Apple1", "character_gquest");
-    m_contentPool.Start(2, "192.168.1.13", "devgquest", "Apple1", "content_gquest");
+    std::cout << "[Database] Initializing pools...\n";
+
+    m_authPool.Start(
+        DatabaseClassification::AUTH_DATABASE,
+        1,
+        "192.168.1.13",
+        "devgquest",
+        "Apple1",
+        "auth_gquest");
+
+    m_characterPool.Start(
+        DatabaseClassification::CHAR_DATABASE,
+        1,
+        "192.168.1.13",
+        "devgquest",
+        "Apple1",
+        "character_gquest");
+
+    m_contentPool.Start(
+        DatabaseClassification::WRLD_DATABASE,
+        1,
+        "192.168.1.13",
+        "devgquest",
+        "Apple1",
+        "content_gquest");
+
+    std::cout << "[Database] All pools initialized!\n";
 }
 
 void DatabaseManager::ShutdownDB()
@@ -71,4 +46,84 @@ void DatabaseManager::ShutdownDB()
     m_authPool.Stop();
     m_characterPool.Stop();
     m_contentPool.Stop();
-}*/
+}
+
+void DatabaseManager::ProcessCallbacks() {
+    m_authPool.PumpCallbacks();
+    m_characterPool.PumpCallbacks();
+    m_contentPool.PumpCallbacks();
+}
+
+
+// ====================== Auth ======================
+
+void DatabaseManager::AccountExists(const std::string& username)
+{
+
+}
+
+void DatabaseManager::AccountExists_Callback(DBJob &job) {
+
+}
+
+
+void DatabaseManager::CreateAccount(const std::string& username)
+{
+    //Add an Account if needed
+}
+
+// ====================== Character ======================
+
+void DatabaseManager::RetrieveCharacterInventory(
+
+    const std::string& characterName,uint32_t characterID)
+{
+    DBJob job;
+
+    job.stmt = Stmt::CHAR_GET_ALL_INVENTORY;
+    job.CharacterID = characterID;
+    job.Description = "Requesting ALL Inventory Information for";
+
+    job.params.SetString(0, characterName);
+
+    job.callback =
+        [this](DBJob& job)
+        {
+            RetrieveCharacterInventory_Callback(job);
+        };
+
+    m_characterPool.Submit(std::move(job));
+}
+
+void DatabaseManager::RetrieveCharacterInventory_Callback(DBJob& JobResult)
+{
+    if (JobResult.result.Empty())
+    {
+        std::cout << "Inventory empty\n";
+        return;
+    }
+
+    for (auto& row : JobResult.result.rows)
+    {
+        int itemId = row[0].GetInt();
+        int quantity = row[1].GetInt();
+
+        std::cout
+            << "Item "
+            << itemId
+            << " x "
+            << quantity
+            << std::endl;
+
+        /*
+        Player* player =
+            WorldSessionMgr::Instance()
+            .GetPlayer(...);
+
+        if(player)
+        {
+            player->AddItem(itemId, quantity);
+        }
+        */
+    }
+}
