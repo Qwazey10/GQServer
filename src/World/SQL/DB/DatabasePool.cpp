@@ -37,37 +37,7 @@ void DatabasePool::Start(
 
     Run();
 }
-/*void DatabasePool::PrepareStatements()
-{
-    m_stmts.resize((size_t)Stmt::MAX, nullptr);
 
-    auto p = [&](Stmt id, const char* sql) {
-        MYSQL_STMT* stmt = mysql_stmt_init(m_conn);
-        if (!stmt) {
-            std::cout << "[DB] Failed to init statement " << (int)id << "\n";
-            return;
-        }
-
-        if (mysql_stmt_prepare(stmt, sql, std::strlen(sql)) != 0) {
-            std::cout << "[DB] Prepare failed for stmt " << (int)id
-                      << ": " << mysql_stmt_error(stmt) << "\n";
-            mysql_stmt_close(stmt);
-            return;
-        }
-
-        m_stmts[(size_t)id] = stmt;
-        std::cout << "[DB] Prepared statement " << (int)id << "\n";
-    };
-
-    // Auth
-    p(Stmt::AUTH_SEL_ACCOUNT_EXISTS, "SELECT username FROM accounts WHERE username=?");
-    p(Stmt::AUTH_INS_ACCOUNT,        "INSERT INTO accounts(username) VALUES(?)");
-
-    // Character
-    p(Stmt::CHAR_GET_ALL_INVENTORY,      "SELECT item_id, quantity FROM inventory WHERE character_name=?");
-
-    // TODO: Add more prepared statements here
-}*/
 bool DatabasePool::Connect()
 {
     std::cout << mysql_get_client_info() << std::endl; // Prints 3.4.8
@@ -156,7 +126,43 @@ void DatabasePool::CHAR_PrepareStatements()
     };
 
     // Character
-    p(Stmt::CHAR_GET_ALL_INVENTORY, "SELECT item_id, quantity FROM inventory WHERE character_name=?");
+    // Check if character name already exists
+    p(Stmt::CHAR_SEL_CHARACTER_EXISTS,
+        "SELECT 1 FROM `character` WHERE character_name = ? LIMIT 1");
+
+    // Create new character
+    p(Stmt::CHAR_INS_CHARACTER,
+        "INSERT INTO `character` "
+        "(account_id, character_name, race_id, class_id, gender, level, xp, money, "
+        "zone_id, position_x, position_y, position_z, position_o, "
+        "transport_x, transport_y, transport_z, transport_o) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+    // Delete character
+    p(Stmt::CHAR_DEL_CHARACTER,
+        "DELETE FROM `character` WHERE guid = ? AND account_id = ?");
+
+    // Save / Update character (full update)
+    p(Stmt::CHAR_SAV_CHARACTER,
+        "UPDATE `character` SET "
+        "level = ?, xp = ?, money = ?, zone_id = ?, "
+        "position_x = ?, position_y = ?, position_z = ?, position_o = ?, "
+        "transport_x = ?, transport_y = ?, transport_z = ?, transport_o = ? "
+        "WHERE guid = ?");
+
+    // Get all characters for an account (Character Selection Screen)
+    p(Stmt::CHAR_GET_CHARACTER_ACCOUNT,
+        "SELECT guid, character_name, race_id, class_id, gender, level, xp, money, "
+        "zone_id, position_x, position_y, position_z, position_o, "
+        "transport_x, transport_y, transport_z, transport_o "
+        "FROM `character` WHERE account_id = ? ORDER BY character_name");
+
+    // Get one character by name // login request etc
+    p(Stmt::CHAR_GET_CHARACTER_NAME,
+        "SELECT guid, account_id, character_name, race_id, class_id, gender, level, xp, money, "
+        "zone_id, position_x, position_y, position_z, position_o, "
+        "transport_x, transport_y, transport_z, transport_o "
+        "FROM `character` WHERE character_name = ? LIMIT 1");
 }
 
 void DatabasePool::WRLD_PrepareStatements()
@@ -186,14 +192,23 @@ void DatabasePool::WRLD_PrepareStatements()
     p(Stmt::WORLD_GET_ALL_CREATURE,
     "SELECT creature_id, name, race_id, hp, mp, model_id, level, "
     "       attack, defense, speed, scale, flags, script_name "
-    "FROM creature_template "
+    "FROM creature "
     "ORDER BY creature_id");
 
     p(Stmt::WORLD_GET_CREATURE_ID,   // ← Consider renaming the enum too
-   "SELECT creature_id, name, race_id, hp, mp, model_id, level, "
-   "       attack, defense, speed, scale, flags, script_name "
-   "FROM creature_template "
+    "SELECT creature_id, name, race_id, hp, mp, model_id, level, "
+    "       attack, defense, speed, scale, flags, script_name "
+    "FROM creature "
    "WHERE creature_id = ?");
+
+    // Loot System
+    p(Stmt::WORLD_GET_ALL_LOOTTABLES,
+        "SELECT lootpool_id, description, "
+        "loot_id_00, lootdroprate_00, mincount_00, maxcount_00, "
+        "loot_id_01, lootdroprate_01, mincount_01, maxcount_01, "
+        "loot_id_02, lootdroprate_02, mincount_02, maxcount_02 "
+        "FROM lootpool_template "
+        "ORDER BY lootpool_id ASC");
 }
 
 void DatabasePool::Run()
@@ -258,6 +273,97 @@ void DatabasePool::Submit(DBJob&& job)
     DB_Request_Queue.push(std::move(job));
 }
 
+QueryResult DatabasePool::FetchResult(MYSQL_STMT *stmt) {
+        QueryResult result;
+
+    if (!stmt)
+        return result;
+
+    MYSQL_RES* meta = mysql_stmt_result_metadata(stmt);
+    if (!meta)
+    {
+        // Not a SELECT query (INSERT/UPDATE/DELETE)
+        mysql_stmt_free_result(stmt);
+        return result;
+    }
+
+    int numFields = mysql_num_fields(meta);
+    std::vector<MYSQL_BIND> binds(numFields);
+    std::vector<std::vector<char>> buffers(numFields);
+    std::vector<unsigned long> lengths(numFields, 0);
+    std::vector<my_bool> isNull(numFields, 0);
+
+    MYSQL_FIELD* fields = mysql_fetch_fields(meta);
+
+    // Force all fields to STRING type - most reliable for mixed INT/FLOAT/VARCHAR
+    for (int i = 0; i < numFields; ++i)
+    {
+        unsigned long bufferSize = 64; // enough for most numbers
+
+        if (fields[i].type == MYSQL_TYPE_STRING ||
+            fields[i].type == MYSQL_TYPE_VAR_STRING ||
+            fields[i].type == MYSQL_TYPE_BLOB)
+        {
+            bufferSize = fields[i].length > 0 ? fields[i].length + 1 : 512;
+        }
+
+        if (bufferSize > 16384) bufferSize = 16384;
+
+        buffers[i].resize(bufferSize, '\0');
+
+        binds[i].buffer_type   = MYSQL_TYPE_STRING;        // Key fix
+        binds[i].buffer        = buffers[i].data();
+        binds[i].buffer_length = bufferSize - 1;
+        binds[i].length        = &lengths[i];
+        binds[i].is_null       = &isNull[i];
+    }
+
+    if (mysql_stmt_bind_result(stmt, binds.data()) != 0)
+    {
+        std::cout << "[DB] Bind result error: " << mysql_stmt_error(stmt) << "\n";
+        mysql_free_result(meta);
+        mysql_stmt_free_result(stmt);
+        return result;
+    }
+
+    mysql_stmt_store_result(stmt);
+
+    while (true)
+    {
+        int status = mysql_stmt_fetch(stmt);
+        if (status == MYSQL_NO_DATA) break;
+        if (status != 0)
+        {
+            std::cout << "[DB] Fetch error: " << mysql_stmt_error(stmt) << "\n";
+            break;
+        }
+
+        std::vector<DBField> row;
+        row.reserve(numFields);
+
+        for (int i = 0; i < numFields; ++i)
+        {
+            DBField field;
+            if (isNull[i] || lengths[i] == 0)
+            {
+                field.value = "";
+            }
+            else
+            {
+                field.value.assign(buffers[i].data(), lengths[i]);
+            }
+            row.push_back(std::move(field));
+        }
+
+        result.AddRow(std::move(row));
+    }
+
+    mysql_free_result(meta);
+    mysql_stmt_free_result(stmt);
+
+    return result;
+}
+
 void DatabasePool::PumpCallbacks()
 {
     DBJob job;
@@ -276,84 +382,72 @@ QueryResult DatabasePool::Execute(DBJob& q) {
     QueryResult result;
 
     MYSQL_STMT* stmt = m_stmts[(size_t)q.stmt];
-    if (!stmt) {
+    if (!stmt)
+    {
         std::cout << "[DB] Statement not prepared: " << (int)q.stmt << "\n";
         return result;
     }
 
     // Bind parameters
-    if (q.params.Size() > 0) {
-        if (mysql_stmt_bind_param(stmt, q.params.Get()) != 0) {
+    if (q.params.Size() > 0)
+    {
+        if (mysql_stmt_bind_param(stmt, q.params.Get()) != 0)
+        {
             std::cout << "[DB] Bind param error: " << mysql_stmt_error(stmt) << "\n";
             return result;
         }
     }
 
-    if (mysql_stmt_execute(stmt) != 0) {
+    if (mysql_stmt_execute(stmt) != 0)
+    {
         std::cout << "[DB] Execute error: " << mysql_stmt_error(stmt) << "\n";
         return result;
     }
 
-    MYSQL_RES* meta = mysql_stmt_result_metadata(stmt);
-    if (!meta) {
-        // No result set (INSERT, UPDATE, etc.)
-        mysql_stmt_free_result(stmt);
+    return FetchResult(stmt);
+}
+
+QueryResult DatabasePool::ForceQuery_NoParams(Stmt stmt)
+{
+    PreparedStatement emptyParams;
+    return ForceQuery(stmt, emptyParams);
+}
+
+QueryResult DatabasePool::ForceQuery(Stmt stmt,PreparedStatement& params)
+{
+    QueryResult result;
+
+    if (!m_conn)
+    {
+        std::cout << "[DB] ForceQuery failed - No connection\n";
         return result;
     }
 
-    int numFields = mysql_num_fields(meta);
-    std::vector<MYSQL_BIND> binds(numFields);
-    std::vector<std::vector<char>> buffers(numFields);
-    std::vector<unsigned long> lengths(numFields);
-    std::vector<my_bool> isNull(numFields);
-
-    memset(binds.data(), 0, sizeof(MYSQL_BIND) * numFields);
-
-    MYSQL_FIELD* fields = mysql_fetch_fields(meta);
-
-    for (int i = 0; i < numFields; i++) {
-        unsigned long size = fields[i].length;
-        if (size < 1) size = 1;
-        if (size > 4096) size = 4096;
-
-        buffers[i].resize(size);
-
-        binds[i].buffer_type = fields[i].type;
-        binds[i].buffer = buffers[i].data();
-        binds[i].buffer_length = size;
-        binds[i].length = &lengths[i];
-        binds[i].is_null = &isNull[i];
+    MYSQL_STMT* mysqlStmt = m_stmts[(size_t)stmt];
+    if (!mysqlStmt)
+    {
+        std::cout << "[DB] ForceQuery failed - Statement not prepared: "
+                  << (int)stmt << "\n";
+        return result;
     }
 
-    mysql_stmt_bind_result(stmt, binds.data());
-    mysql_stmt_store_result(stmt);
-
-    while (true) {
-        int status = mysql_stmt_fetch(stmt);
-        if (status == MYSQL_NO_DATA) break;
-        if (status != 0) {
-            std::cout << "[DB] Fetch error: " << mysql_stmt_error(stmt) << "\n";
-            break;
+    // Bind parameters if any
+    if (params.Size() > 0)
+    {
+        if (mysql_stmt_bind_param(mysqlStmt, params.Get()) != 0)
+        {
+            std::cout << "[DB] ForceQuery bind error: "
+                      << mysql_stmt_error(mysqlStmt) << "\n";
+            return result;
         }
-
-        std::vector<DBField> row;
-        row.reserve(numFields);
-
-        for (int i = 0; i < numFields; i++) {
-            DBField field;
-            if (isNull[i]) {
-                field.value = "";
-            } else {
-                field.value.assign(buffers[i].data(), lengths[i]);
-            }
-            row.push_back(std::move(field));
-        }
-
-        result.AddRow(std::move(row));
     }
 
-    mysql_free_result(meta);
-    mysql_stmt_free_result(stmt);
+    if (mysql_stmt_execute(mysqlStmt) != 0)
+    {
+        std::cout << "[DB] ForceQuery execute error: "
+                  << mysql_stmt_error(mysqlStmt) << "\n";
+        return result;
+    }
 
-    return result;
+    return FetchResult(mysqlStmt);
 }

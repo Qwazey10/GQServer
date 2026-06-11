@@ -34,7 +34,13 @@ public:
 
     void Submit(DBJob&& job);
 
+    static QueryResult FetchResult(MYSQL_STMT* stmt);
     QueryResult Execute(DBJob& q);
+
+    QueryResult ForceQuery_NoParams(Stmt stmt);
+
+    QueryResult ForceQuery(Stmt stmt, PreparedStatement &params);
+
 
     void RequestStop()
     {
