@@ -3,6 +3,7 @@
 #include "src/NetworkSocketMgr/NetworkSocketMgr.h"
 #include "src/World/World.h"
 #include "src/World/SQL/DatabaseManager.h"
+#include "World/LootManager/LootManager.h"
 #include "World/Maps/MapBuilder.h"
 #include "World/TimeManager/TimeManager.h"
 
@@ -25,6 +26,9 @@ int main() {
 
         std::cout << "MAIN -- Initializing TimeManager...\n";
         TimeManager::Instance().Initialize();
+
+        std::cout << "MAIN -- Initializing LootManager...\n";
+        LootManager::Instance().Initialize();
 
         std::cout << " MAIN -- Starting NetworkSocketMgr...\n";
         NetworkSocketMgr::Instance().StartListening("0.0.0.0", 12345, io_context);
