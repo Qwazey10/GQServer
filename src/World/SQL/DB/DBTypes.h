@@ -10,26 +10,154 @@ struct DBField
 {
     std::string value;
 
-    [[nodiscard]] int32_t GetInt() const
+    // ====================== Integer Getters ======================
+    [[nodiscard]] int8_t   GetInt8()   const { return SafeToInt8(); }
+    [[nodiscard]] uint8_t  GetUInt8()  const { return SafeToUInt8(); }
+    [[nodiscard]] int16_t  GetInt16()  const { return SafeToInt16(); }
+    [[nodiscard]] uint16_t GetUInt16() const { return SafeToUInt16(); }
+    [[nodiscard]] int32_t  GetInt32()  const { return SafeToInt32(); }
+    [[nodiscard]] uint32_t GetUInt32() const { return SafeToUInt32(); }
+    [[nodiscard]] int64_t  GetInt64()  const { return SafeToInt64(); }
+    [[nodiscard]] uint64_t GetUInt64() const { return SafeToUInt64(); }
+
+    // Legacy compatibility
+    [[nodiscard]] int32_t  GetInt()    const { return GetInt32(); }
+    [[nodiscard]] uint32_t GetUInt()   const { return GetUInt32(); }
+
+    // ====================== Floating Point ======================
+    [[nodiscard]] float    GetFloat()  const { return SafeToFloat(); }
+    [[nodiscard]] double   GetDouble() const { return SafeToDouble(); }
+
+    // ====================== Boolean ======================
+    [[nodiscard]] bool GetBool() const
     {
-        return std::stoi(value);
+        if (IsNull()) return false;
+        if (value == "1" || value == "true" || value == "TRUE" || value == "yes" || value == "YES")
+            return true;
+        return false;
     }
 
-    [[nodiscard]] int64_t GetInt64() const
+    // ====================== String ======================
+    [[nodiscard]] const std::string& GetString() const { return value; }
+    [[nodiscard]] std::string GetStringCopy() const { return value; }
+
+    // ====================== Safe with Default ======================
+    template<typename T>
+    [[nodiscard]] T GetOrDefault(T defaultValue) const
     {
-        return std::stoll(value);
+        if (IsNull())
+            return defaultValue;
+
+        try
+        {
+            if constexpr (std::is_same_v<T, bool>)      return GetBool();
+            else if constexpr (std::is_same_v<T, int8_t>)   return GetInt8();
+            else if constexpr (std::is_same_v<T, uint8_t>)  return GetUInt8();
+            else if constexpr (std::is_same_v<T, int16_t>)  return GetInt16();
+            else if constexpr (std::is_same_v<T, uint16_t>) return GetUInt16();
+            else if constexpr (std::is_same_v<T, int32_t>)  return GetInt32();
+            else if constexpr (std::is_same_v<T, uint32_t>) return GetUInt32();
+            else if constexpr (std::is_same_v<T, int64_t>)  return GetInt64();
+            else if constexpr (std::is_same_v<T, uint64_t>) return GetUInt64();
+            else if constexpr (std::is_same_v<T, float>)    return GetFloat();
+            else if constexpr (std::is_same_v<T, double>)   return GetDouble();
+        }
+        catch (...) {}
+
+        return defaultValue;
     }
 
-    [[nodiscard]] float GetFloat() const
+    [[nodiscard]] bool IsNull() const
     {
-        return std::stof(value);
+        return value.empty();
     }
 
-    [[nodiscard]] const std::string& GetString() const
-    {
-        return value;
-    }
+private:
+    // Safe conversion helpers
+    int8_t   SafeToInt8()   const { if (IsNull()) return 0; try { return static_cast<int8_t>(std::stoi(value)); }   catch(...) { return 0; } }
+    uint8_t  SafeToUInt8()  const { if (IsNull()) return 0; try { return static_cast<uint8_t>(std::stoul(value)); }  catch(...) { return 0; } }
+    int16_t  SafeToInt16()  const { if (IsNull()) return 0; try { return static_cast<int16_t>(std::stoi(value)); }   catch(...) { return 0; } }
+    uint16_t SafeToUInt16() const { if (IsNull()) return 0; try { return static_cast<uint16_t>(std::stoul(value)); } catch(...) { return 0; } }
+    int32_t  SafeToInt32()  const { if (IsNull()) return 0; try { return std::stoi(value); }   catch(...) { return 0; } }
+    uint32_t SafeToUInt32() const { if (IsNull()) return 0; try { return std::stoul(value); }  catch(...) { return 0; } }
+    int64_t  SafeToInt64()  const { if (IsNull()) return 0; try { return std::stoll(value); }  catch(...) { return 0; } }
+    uint64_t SafeToUInt64() const { if (IsNull()) return 0; try { return std::stoull(value); } catch(...) { return 0; } }
+
+    float    SafeToFloat()  const { if (IsNull()) return 0.0f; try { return std::stof(value); }  catch(...) { return 0.0f; } }
+    [[nodiscard]] double   SafeToDouble() const { if (IsNull()) return 0.0;  try { return std::stod(value); }  catch(...) { return 0.0; } }
 };
+/*struct DBField
+{
+    std::string value;
+
+    // ====================== Integer Getters ======================
+    [[nodiscard]] int8_t   GetInt8()   const { return static_cast<int8_t>(std::stoi(value)); }
+    [[nodiscard]] uint8_t  GetUInt8()  const { return static_cast<uint8_t>(std::stoul(value)); }
+    [[nodiscard]] int16_t  GetInt16()  const { return static_cast<int16_t>(std::stoi(value)); }
+    [[nodiscard]] uint16_t GetUInt16() const { return static_cast<uint16_t>(std::stoul(value)); }
+    [[nodiscard]] int32_t  GetInt32()  const { return std::stoi(value); }
+    [[nodiscard]] uint32_t GetUInt32() const { return std::stoul(value); }
+    [[nodiscard]] int64_t  GetInt64()  const { return std::stoll(value); }
+    [[nodiscard]] uint64_t GetUInt64() const { return std::stoull(value); }
+
+    // Legacy aliases (for backwards compatibility)
+    [[nodiscard]] int32_t GetInt()     const { return GetInt32(); }
+    [[nodiscard]] uint32_t GetUInt()   const { return GetUInt32(); }
+
+    // ====================== Floating Point ======================
+    [[nodiscard]] float    GetFloat()  const { return std::stof(value); }
+    [[nodiscard]] double   GetDouble() const { return std::stod(value); }
+
+    // ====================== Boolean ======================
+    [[nodiscard]] bool GetBool() const
+    {
+        if (value.empty()) return false;
+
+        // Support common database boolean representations
+        if (value == "1" || value == "true" || value == "TRUE" || value == "yes" || value == "YES")
+            return true;
+
+        return false;
+    }
+
+    // ====================== String ======================
+    [[nodiscard]] const std::string& GetString() const { return value; }
+
+    [[nodiscard]] std::string GetStringCopy() const { return value; }
+
+    // ====================== Safe Getters with Default ======================
+    template<typename T>
+    [[nodiscard]] T GetOrDefault(T defaultValue) const
+    {
+        try
+        {
+            if constexpr (std::is_same_v<T, bool>)
+                return GetBool();
+            else if constexpr (std::is_same_v<T, int8_t>)   return GetInt8();
+            else if constexpr (std::is_same_v<T, uint8_t>)  return GetUInt8();
+            else if constexpr (std::is_same_v<T, int16_t>)  return GetInt16();
+            else if constexpr (std::is_same_v<T, uint16_t>) return GetUInt16();
+            else if constexpr (std::is_same_v<T, int32_t>)  return GetInt32();
+            else if constexpr (std::is_same_v<T, uint32_t>) return GetUInt32();
+            else if constexpr (std::is_same_v<T, int64_t>)  return GetInt64();
+            else if constexpr (std::is_same_v<T, uint64_t>) return GetUInt64();
+            else if constexpr (std::is_same_v<T, float>)    return GetFloat();
+            else if constexpr (std::is_same_v<T, double>)   return GetDouble();
+            else
+                return defaultValue;
+        }
+        catch (...)
+        {
+            return defaultValue;
+        }
+    }
+
+    // Check if field is NULL / empty
+    [[nodiscard]] bool IsNull() const
+    {
+        return value.empty();
+    }
+};*/
 
 struct QueryResult
 {
@@ -144,13 +272,16 @@ enum class DatabaseClassification : uint32_t {
 
 enum class Stmt : uint32_t
 {
-    AUTH_SEL_ACCOUNT_EXISTS,
+    //Account Statements
+    AUTH_SEL_ACCOUNT_EXISTS, // Statement to check if an account exists
     AUTH_INS_ACCOUNT, //Statement
 
-    CHAR_SEL_CHARACTER_EXISTS, //Statement to Check if a Character Exists
-    CHAR_INS_CHARACTER, // Statement to CREATE a New Character if none exist
-    CHAR_DEL_CHARACTER, // Statement to DELETE a Character if
-    CHAR_SAV_CHARACTER, // Statement to SAVE the character to the database
+    CHAR_SEL_CHARACTER_EXISTS, // Statement to Check if a Character Exists.
+    CHAR_INS_CHARACTER, // Statement to CREATE a New Character if none exist.
+    CHAR_DEL_CHARACTER, // Statement to DELETE a Character.
+    CHAR_SAV_CHARACTER, // Statement to SAVE the character to the database.
+    CHAR_GET_CHARACTER_ACCOUNT, // Statement to GET the character by ACCOUNT ID.
+    CHAR_GET_CHARACTER_NAME, //Statement to GET the character by character NAME.
 
     CHAR_GET_ALL_INVENTORY, // Statement to get the entirety of the Character Inventory
     CHAR_INS_INVENTORY, // Statement to add an Item to Character Inventory
@@ -158,6 +289,8 @@ enum class Stmt : uint32_t
 
     WORLD_GET_ALL_CREATURE, // Statement to Query the Creature Database and Construct all Creature Pointers
     WORLD_GET_CREATURE_ID,
+
+    WORLD_GET_ALL_LOOTTABLES, // Statement to get all loottable information and create LootTable Pointers.
 
     MAX
 };
