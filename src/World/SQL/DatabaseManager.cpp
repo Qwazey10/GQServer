@@ -127,3 +127,11 @@ void DatabaseManager::RetrieveCharacterInventory_Callback(DBJob& JobResult)
         */
     }
 }
+
+void DatabaseManager::RetrieveCharacterInformation(const std::string &characterName, uint32_t characterId) {
+
+}
+
+void DatabaseManager::RetrieveCharacterInformation_Callback(DBJob &JobResult) {
+    
+}
