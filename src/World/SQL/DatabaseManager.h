@@ -21,21 +21,33 @@ public:
 
 
     // ====================== Auth DB Functions ======================
+    //We will bind some of these functions to the AuthServer, but for now we have it on WorldServer
     void AccountExists(const std::string& username);
     void AccountExists_Callback(DBJob& job);
     void CreateAccount(const std::string& username);
 
     // ====================== Character DB Functions =================
-    //Retreive the Entiery of the Characters Inventory
+    // Character Management Functions
+    // Create Character
+    void CreateCharacter(uint32_t GUID, const std::string& username);
+
+    // Create the Corresponding Database Entries Required for a working Character -- This will expand later.
+    // 1. Create the Character Inventory
+    void CreateCharacterInventory(uint32_t GUID, const std::string& username);
+    void CreateCharacterInventory_Callback(DBJob& JobResult);
+    // 2. Create the character spellbook? talent sheet.
+    // Add Functions here, when completed, call Finished Creating Character to send all the relevant information to client.
+    //Function to call when the character
+    void FinishCreatingCharacter(uint32_t GUID, const std::string& username);
+
+    void RetrieveCharacterInformation_GUID(uint32_t GUID);
+    void RetrieveCharacterInformation_CharacterName(std::string& characterName);
+    void RetrieveCharacterInformation_Callback(DBJob& JobResult);
+
+    void Retrieve_ALL_CharacterInformation_AccountID(uint32_t AccountID);
+
     void RetrieveCharacterInventory(const std::string& characterName, uint32_t characterId);
     void RetrieveCharacterInventory_Callback(DBJob& JobResult);
-
-
-    void CreateCharacter();
-    void CreateCharacterInventory(uint32_t GUID, const std::string& username);
-    void CreatecharacterInventory_Callback(DBJob& JobResult);
-    void RetrieveCharacterInformation(const std::string& characterName, uint32_t characterId);
-    void RetrieveCharacterInformation_Callback(DBJob& JobResult);
 
 
 

@@ -31,6 +31,11 @@ void World::Start() {
     TimeManager::Instance().ScheduleRepeating(10000, []() {
     std::cout << "Repeating every 10s - Ping Clients: " << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;});
     WorldSessionMgr::Instance().PingAllConnectedPlayers();
+    TimeManager::Instance().ScheduleRepeating(10000, []() {
+    std::cout << "Testing Character Database" << std::endl;
+        DatabaseManager::Instance().Retrieve_ALL_CharacterInformation_AccountID();
+    });
+
 }
 
 void World::Stop() {

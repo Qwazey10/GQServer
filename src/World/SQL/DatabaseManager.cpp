@@ -74,6 +74,32 @@ void DatabaseManager::CreateAccount(const std::string& username)
 
 // ====================== Character ======================
 
+void DatabaseManager::RetrieveCharacterInformation_GUID(uint32_t GUID) {
+    DBJob job;
+
+    job.stmt = Stmt::CHAR_GET_ALL_INVENTORY;
+    job.GUID = GUID;
+    job.Description = "Requesting Character Information by GUID";
+
+    job.params.SetString(0, job.GUID);
+    job.params.SetInt32(0,job.GUID);
+
+    job.callback =
+        [this](DBJob& job)
+        {
+            RetrieveCharacterInventory_Callback(job);
+        };
+
+    m_characterPool.Submit(std::move(job));
+
+}
+
+void DatabaseManager::RetrieveCharacterInformation_CharacterName(std::string &characterName) {
+}
+
+void DatabaseManager::RetrieveCharacterInformation_Callback(DBJob &JobResult) {
+}
+
 void DatabaseManager::RetrieveCharacterInventory(
 
     const std::string& characterName,uint32_t characterID)
@@ -81,7 +107,7 @@ void DatabaseManager::RetrieveCharacterInventory(
     DBJob job;
 
     job.stmt = Stmt::CHAR_GET_ALL_INVENTORY;
-    job.CharacterID = characterID;
+    job.CharacterName = characterName;
     job.Description = "Requesting ALL Inventory Information for";
 
     job.params.SetString(0, characterName);
@@ -128,10 +154,4 @@ void DatabaseManager::RetrieveCharacterInventory_Callback(DBJob& JobResult)
     }
 }
 
-void DatabaseManager::RetrieveCharacterInformation(const std::string &characterName, uint32_t characterId) {
 
-}
-
-void DatabaseManager::RetrieveCharacterInformation_Callback(DBJob &JobResult) {
-    
-}

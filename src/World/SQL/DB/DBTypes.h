@@ -272,21 +272,34 @@ enum class DatabaseClassification : uint32_t {
 
 enum class Stmt : uint32_t
 {
-    //Account Statements
+    // ======== ACCOUNT STATEMENTS ==========
     AUTH_SEL_ACCOUNT_EXISTS, // Statement to check if an account exists
-    AUTH_INS_ACCOUNT, //Statement
+    AUTH_INS_ACCOUNT, //Statement to Insert a new account
+    AUTH_GET_ACCOUNT_USERNAME, //Statement to get an account via USERNAME
 
+    //========= CHARACTER STATEMENTS ========
+
+    //Create/Delete a Character
     CHAR_SEL_CHARACTER_EXISTS, // Statement to Check if a Character Exists.
     CHAR_INS_CHARACTER, // Statement to CREATE a New Character if none exist.
-    CHAR_DEL_CHARACTER, // Statement to DELETE a Character.
-    CHAR_SAV_CHARACTER, // Statement to SAVE the character to the database.
-    CHAR_GET_CHARACTER_ACCOUNT, // Statement to GET the character by ACCOUNT ID.
+    CHAR_DEL_CHARACTER_GUID, // Statement to DELETE a Character via GUID.
+
+    //Save a character
+    CHAR_SAV_CHARACTER_GUID, // Statement to SAVE the Character to the DB via GUID.
+    CHAR_SAV_CHARACTER_CHARACTER_NAME, // Statement to SAVE the Character to the DB via Character Name.
+
+    //Retrieve Character Information
+    CHAR_GET_CHARACTER_GUID, // Statement to GET Character Information
+    CHAR_GET_CHARACTER_ALL_ACCOUNT, // Statement to GET the character by ACCOUNT ID.
     CHAR_GET_CHARACTER_NAME, //Statement to GET the character by character NAME.
 
+
+    //Get Character Inventory
     CHAR_GET_ALL_INVENTORY, // Statement to get the entirety of the Character Inventory
     CHAR_INS_INVENTORY, // Statement to add an Item to Character Inventory
-    CHAR_DEL_INVENTORY, // Statement to remove an item from Character Inventory
+    CHAR_DEL_INVENTORY, // Statement to remove an item from Character Inventory via GUID
 
+    //======= WORLD STATEMENTS ============
     WORLD_GET_ALL_CREATURE, // Statement to Query the Creature Database and Construct all Creature Pointers
     WORLD_GET_CREATURE_ID,
 
@@ -313,10 +326,13 @@ struct DBJob
     uint64_t RequestHandledTimestamp = 0;
 
     //Character ID - CharacterID for the origination of the Request
-    uint32_t CharacterID = 0;
+    uint32_t GUID = 0;
 
     //Account ID - AccountID for the origination of the Request
     uint32_t AccountID = 0;
+
+    //Character Name - Character Name associated with Request
+    std::string CharacterName;
 
     //ZoneID - Which ZoneID was the database job created from
     uint32_t ZoneID = 0;
