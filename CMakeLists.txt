@@ -66,6 +66,8 @@ add_executable(GQuestServer
         src/World/SQL/DB/DatabasePool.cpp
         src/World/SQL/DB/DatabasePool.h
         src/World/SQL/DB/DBTypes.h
+        src/World/LootManager/LootManager.cpp
+        src/World/LootManager/LootManager.h
 
 )
 
