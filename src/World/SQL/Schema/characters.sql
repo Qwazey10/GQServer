@@ -21,13 +21,18 @@ USE `character_gquest`;
 
 -- Dumping structure for table character_gquest.character
 CREATE TABLE IF NOT EXISTS `character` (
-  `guid` int(11) DEFAULT NULL COMMENT 'global unique ID',
+  `guid` bigint(20) DEFAULT NULL COMMENT 'global unique ID',
   `account_id` int(11) DEFAULT NULL COMMENT 'Account ID',
   `character_name` varchar(50) DEFAULT NULL COMMENT 'Character Name',
-  `race_id` tinyint(4) DEFAULT NULL COMMENT 'RaceID',
-  `class_id` tinyint(4) DEFAULT NULL COMMENT 'ClassID',
-  `gender` tinyint(4) DEFAULT NULL COMMENT 'GenderID 0=male 1=female',
-  `level` tinyint(4) DEFAULT NULL,
+  `class_id_primary` int(11) DEFAULT NULL COMMENT 'primary class id',
+  `class_id_second` int(11) DEFAULT NULL COMMENT 'secondary class id',
+  `class_id_third` int(11) DEFAULT NULL COMMENT 'third class id',
+  `race_id` int(11) DEFAULT NULL COMMENT 'RaceID',
+  `gender` int(11) DEFAULT NULL COMMENT 'GenderID 0=male 1=female',
+  `hair_id` int(11) DEFAULT NULL,
+  `face_id` int(11) DEFAULT NULL,
+  `skin_id` int(11) DEFAULT NULL,
+  `level` int(11) DEFAULT NULL,
   `xp` int(11) DEFAULT NULL COMMENT 'Experience Points',
   `money` int(11) DEFAULT NULL COMMENT 'Represented in Copper',
   `zone_id` int(11) DEFAULT NULL COMMENT 'zone ID of the character',

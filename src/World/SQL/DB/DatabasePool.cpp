@@ -127,42 +127,68 @@ void DatabasePool::CHAR_PrepareStatements()
 
     // Character
     // Check if character name already exists
+    std::cout << "[DBPool][Character Statements] Attempting to BIND - Check if character name exists by Char name " << std::endl;
     p(Stmt::CHAR_SEL_CHARACTER_EXISTS,
-        "SELECT 1 FROM `character` WHERE character_name = ? LIMIT 1");
+        "SELECT 1 FROM `character` WHERE `character_name` = ? LIMIT 1");
 
-    // Create new character
+    // Create New Character
+    // Columns: 22 total (guid + 21 data columns)
+    // Note: If 'guid' is AUTO_INCREMENT in SQL, remove it from this list and the VALUES.
+    std::cout << "[DBPool][Character Statements] Attempting to BIND - Insert Character Full " << std::endl;
+
     p(Stmt::CHAR_INS_CHARACTER,
         "INSERT INTO `character` "
-        "(account_id, character_name, race_id, class_id, gender, level, xp, money, "
-        "zone_id, position_x, position_y, position_z, position_o, "
-        "transport_x, transport_y, transport_z, transport_o) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        "(`guid`, `account_id`, `character_name`, `race_id`, `class_id_primary`, `class_id_second`, `class_id_third`, "
+        "`gender`, `hair_id`, `face_id`, `skin_id`, `level`, `xp`, `money`, "
+        "`zone_id`, `position_x`, `position_y`, `position_z`, `position_o`, "
+        "`transport_x`, `transport_y`, `transport_z`, `transport_o`) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    // Ensure there are exactly 23 question marks above.
+    // Count: 22 columns, 22 placeholders (?)
 
     // Delete character
-    p(Stmt::CHAR_DEL_CHARACTER,
-        "DELETE FROM `character` WHERE guid = ? AND account_id = ?");
+    std::cout << "[DBPool][Character Statements] Attempting to BIND - Delete character by GUID and Account ID " << std::endl;
+
+    p(Stmt::CHAR_DEL_CHARACTER_GUID_ACCOUNT,
+        "DELETE FROM `character` WHERE `guid` = ? AND `account_id` = ?");
 
     // Save / Update character (full update)
-    p(Stmt::CHAR_SAV_CHARACTER,
+    // Updated to include class and customization fields if your save logic requires overwriting them.
+    // If this is strictly for session stats (xp/pos), you can keep it minimal.
+    // Below is the FULL row update matching the schema.
+    std::cout << "[DBPool][Character Statements] Attempting to BIND - SAVE Character by GUID " << std::endl;
+
+    p(Stmt::CHAR_SAV_CHARACTER_GUID,
         "UPDATE `character` SET "
-        "level = ?, xp = ?, money = ?, zone_id = ?, "
-        "position_x = ?, position_y = ?, position_z = ?, position_o = ?, "
-        "transport_x = ?, transport_y = ?, transport_z = ?, transport_o = ? "
-        "WHERE guid = ?");
+        "`race_id` = ?, `class_id_primary` = ?, `class_id_second` = ?, `class_id_third` = ?, "
+        "`gender` = ?, `hair_id` = ?, `face_id` = ?, `skin_id` = ?, "
+        "`level` = ?, `xp` = ?, `money` = ?, `zone_id` = ?, "
+        "`position_x` = ?, `position_y` = ?, `position_z` = ?, `position_o` = ?, "
+        "`transport_x` = ?, `transport_y` = ?, `transport_z` = ?, `transport_o` = ? "
+        "WHERE `guid` = ?");
+    // Count: 20 SET parameters + 1 WHERE parameter = 21 placeholders (?)
 
     // Get all characters for an account (Character Selection Screen)
-    p(Stmt::CHAR_GET_CHARACTER_ACCOUNT,
-        "SELECT guid, character_name, race_id, class_id, gender, level, xp, money, "
-        "zone_id, position_x, position_y, position_z, position_o, "
-        "transport_x, transport_y, transport_z, transport_o "
-        "FROM `character` WHERE account_id = ? ORDER BY character_name");
+    // Updated SELECT list to match new columns.
+    std::cout << "[DBPool][Character Statements] Attempting to BIND - GET ALL CHARACTER BY ACCOUNT ID " << std::endl;
 
-    // Get one character by name // login request etc
+    p(Stmt::CHAR_GET_CHARACTER_ALL_ACCOUNT,
+        "SELECT `guid`, `character_name`, `race_id`, `class_id_primary`, `class_id_second`, `class_id_third`, "
+        "`gender`, `hair_id`, `face_id`, `skin_id`, `level`, `xp`, `money`, "
+        "`zone_id`, `position_x`, `position_y`, `position_z`, `position_o`, "
+        "`transport_x`, `transport_y`, `transport_z`, `transport_o` "
+        "FROM `character` WHERE `account_id` = ? ORDER BY `character_name`");
+
+    // Get one character by name (login request etc)
+    // Updated SELECT list to match new columns.
+    std::cout << "[DBPool][Character Statements] Attempting to BIND - GET characer by NAME" << std::endl;
+
     p(Stmt::CHAR_GET_CHARACTER_NAME,
-        "SELECT guid, account_id, character_name, race_id, class_id, gender, level, xp, money, "
-        "zone_id, position_x, position_y, position_z, position_o, "
-        "transport_x, transport_y, transport_z, transport_o "
-        "FROM `character` WHERE character_name = ? LIMIT 1");
+        "SELECT `guid`, `account_id`, `character_name`, `race_id`, `class_id_primary`, `class_id_second`, `class_id_third`, "
+        "`gender`, `hair_id`, `face_id`, `skin_id`, `level`, `xp`, `money`, "
+        "`zone_id`, `position_x`, `position_y`, `position_z`, `position_o`, "
+        "`transport_x`, `transport_y`, `transport_z`, `transport_o` "
+        "FROM `character` WHERE `character_name` = ? LIMIT 1");
 }
 
 void DatabasePool::WRLD_PrepareStatements()

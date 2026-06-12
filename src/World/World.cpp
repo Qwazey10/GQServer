@@ -27,13 +27,11 @@ void World::Start() {
     m_thread = std::thread(&World::Run, this);
     std::cout << "World thread started (60 TPS)\n";
 
-    //Start Timer Manager to ping connected players.
+    /*//Start Timer Manager to ping connected players.
     TimeManager::Instance().ScheduleRepeating(10000, []() {
     std::cout << "Repeating every 10s - Ping Clients: " << TimeManager::Instance().GetUptimeSeconds() << "s" << std::endl;});
-    WorldSessionMgr::Instance().PingAllConnectedPlayers();
-    TimeManager::Instance().ScheduleRepeating(10000, []() {
-    std::cout << "Testing Character Database" << std::endl;
-        DatabaseManager::Instance().Retrieve_ALL_CharacterInformation_AccountID();
+    WorldSessionMgr::Instance().PingAllConnectedPlayers();*/
+
     });
 
 }

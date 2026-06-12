@@ -74,16 +74,16 @@ struct DBField
 
 private:
     // Safe conversion helpers
-    int8_t   SafeToInt8()   const { if (IsNull()) return 0; try { return static_cast<int8_t>(std::stoi(value)); }   catch(...) { return 0; } }
-    uint8_t  SafeToUInt8()  const { if (IsNull()) return 0; try { return static_cast<uint8_t>(std::stoul(value)); }  catch(...) { return 0; } }
-    int16_t  SafeToInt16()  const { if (IsNull()) return 0; try { return static_cast<int16_t>(std::stoi(value)); }   catch(...) { return 0; } }
-    uint16_t SafeToUInt16() const { if (IsNull()) return 0; try { return static_cast<uint16_t>(std::stoul(value)); } catch(...) { return 0; } }
-    int32_t  SafeToInt32()  const { if (IsNull()) return 0; try { return std::stoi(value); }   catch(...) { return 0; } }
-    uint32_t SafeToUInt32() const { if (IsNull()) return 0; try { return std::stoul(value); }  catch(...) { return 0; } }
-    int64_t  SafeToInt64()  const { if (IsNull()) return 0; try { return std::stoll(value); }  catch(...) { return 0; } }
-    uint64_t SafeToUInt64() const { if (IsNull()) return 0; try { return std::stoull(value); } catch(...) { return 0; } }
+    [[nodiscard]] int8_t   SafeToInt8()   const { if (IsNull()) return 0; try { return static_cast<int8_t>(std::stoi(value)); }   catch(...) { return 0; } }
+    [[nodiscard]] uint8_t  SafeToUInt8()  const { if (IsNull()) return 0; try { return static_cast<uint8_t>(std::stoul(value)); }  catch(...) { return 0; } }
+    [[nodiscard]] int16_t  SafeToInt16()  const { if (IsNull()) return 0; try { return static_cast<int16_t>(std::stoi(value)); }   catch(...) { return 0; } }
+    [[nodiscard]] uint16_t SafeToUInt16() const { if (IsNull()) return 0; try { return static_cast<uint16_t>(std::stoul(value)); } catch(...) { return 0; } }
+    [[nodiscard]] int32_t  SafeToInt32()  const { if (IsNull()) return 0; try { return std::stoi(value); }   catch(...) { return 0; } }
+    [[nodiscard]] uint32_t SafeToUInt32() const { if (IsNull()) return 0; try { return std::stoul(value); }  catch(...) { return 0; } }
+    [[nodiscard]] int64_t  SafeToInt64()  const { if (IsNull()) return 0; try { return std::stoll(value); }  catch(...) { return 0; } }
+    [[nodiscard]] uint64_t SafeToUInt64() const { if (IsNull()) return 0; try { return std::stoull(value); } catch(...) { return 0; } }
 
-    float    SafeToFloat()  const { if (IsNull()) return 0.0f; try { return std::stof(value); }  catch(...) { return 0.0f; } }
+    [[nodiscard]] float    SafeToFloat()  const { if (IsNull()) return 0.0f; try { return std::stof(value); }  catch(...) { return 0.0f; } }
     [[nodiscard]] double   SafeToDouble() const { if (IsNull()) return 0.0;  try { return std::stod(value); }  catch(...) { return 0.0; } }
 };
 /*struct DBField
@@ -201,63 +201,89 @@ struct PreparedStatement
         }
     }
 
+    // === String ===
     void SetString(uint32_t i, const std::string& v)
     {
         ensure(i);
-
         storage[i].assign(v.begin(), v.end());
 
         MYSQL_BIND& b = bind[i];
         memset(&b, 0, sizeof(MYSQL_BIND));
 
-        b.buffer_type = MYSQL_TYPE_STRING;
-        b.buffer = storage[i].data();
-        b.buffer_length =
-            static_cast<unsigned long>(storage[i].size());
+        b.buffer_type   = MYSQL_TYPE_STRING;
+        b.buffer        = storage[i].data();
+        b.buffer_length = static_cast<unsigned long>(storage[i].size());
+        b.is_null       = nullptr;
     }
 
-    void SetInt32(uint32_t i, int32_t v)
+    // === Integer types ===
+    void SetInt8(uint32_t i, int8_t v)   { SetInteger(i, MYSQL_TYPE_TINY, &v, sizeof(v)); }
+    void SetUInt8(uint32_t i, uint8_t v) { SetInteger(i, MYSQL_TYPE_TINY, &v, sizeof(v)); }
+
+    void SetInt16(uint32_t i, int16_t v) { SetInteger(i, MYSQL_TYPE_SHORT, &v, sizeof(v)); }
+    void SetUInt16(uint32_t i, uint16_t v){ SetInteger(i, MYSQL_TYPE_SHORT, &v, sizeof(v)); }
+
+    void SetInt32(uint32_t i, int32_t v) { SetInteger(i, MYSQL_TYPE_LONG, &v, sizeof(v)); }
+    void SetUInt32(uint32_t i, uint32_t v){ SetInteger(i, MYSQL_TYPE_LONG, &v, sizeof(v)); }
+
+    void SetInt64(uint32_t i, int64_t v) { SetInteger(i, MYSQL_TYPE_LONGLONG, &v, sizeof(v)); }
+    void SetUInt64(uint32_t i, uint64_t v){ SetInteger(i, MYSQL_TYPE_LONGLONG, &v, sizeof(v)); }
+
+    // === Float / Double ===
+    void SetFloat(uint32_t i, float v)
     {
         ensure(i);
-
-        storage[i].resize(sizeof(int32_t));
-        memcpy(storage[i].data(), &v, sizeof(int32_t));
+        storage[i].resize(sizeof(float));
+        memcpy(storage[i].data(), &v, sizeof(float));
 
         MYSQL_BIND& b = bind[i];
         memset(&b, 0, sizeof(MYSQL_BIND));
 
-        b.buffer_type = MYSQL_TYPE_LONG;
-        b.buffer = storage[i].data();
+        b.buffer_type = MYSQL_TYPE_FLOAT;
+        b.buffer      = storage[i].data();
+        b.is_null     = nullptr;
     }
 
-    void SetInt64(uint32_t i, int64_t v)
+    void SetDouble(uint32_t i, double v)
     {
         ensure(i);
-
-        storage[i].resize(sizeof(int64_t));
-        memcpy(storage[i].data(), &v, sizeof(int64_t));
+        storage[i].resize(sizeof(double));
+        memcpy(storage[i].data(), &v, sizeof(double));
 
         MYSQL_BIND& b = bind[i];
         memset(&b, 0, sizeof(MYSQL_BIND));
 
-        b.buffer_type = MYSQL_TYPE_LONGLONG;
-        b.buffer = storage[i].data();
+        b.buffer_type = MYSQL_TYPE_DOUBLE;
+        b.buffer      = storage[i].data();
+        b.is_null     = nullptr;
     }
 
-    MYSQL_BIND* Get()
+    // === Boolean ===
+    void SetBool(uint32_t i, bool v)
     {
-        return bind.data();
+        uint8_t val = v ? 1 : 0;
+        SetInteger(i, MYSQL_TYPE_TINY, &val, sizeof(val));
     }
 
-    [[nodiscard]] const MYSQL_BIND* Get() const
+private:
+    void SetInteger(uint32_t i, enum enum_field_types type, const void* value, size_t size)
     {
-        return bind.data();
+        ensure(i);
+        storage[i].resize(size);
+        memcpy(storage[i].data(), value, size);
+
+        MYSQL_BIND& b = bind[i];
+        memset(&b, 0, sizeof(MYSQL_BIND));
+
+        b.buffer_type = type;
+        b.buffer      = storage[i].data();
+        b.is_null     = nullptr;
     }
 
-    [[nodiscard]] size_t Size() const
-    {
-        return bind.size();
-    }
+public:
+    MYSQL_BIND* Get() { return bind.data(); }
+    [[nodiscard]] const MYSQL_BIND* Get() const { return bind.data(); }
+    [[nodiscard]] size_t Size() const { return bind.size(); }
 
     std::vector<MYSQL_BIND> bind;
     std::vector<std::vector<uint8_t>> storage;
@@ -273,16 +299,16 @@ enum class DatabaseClassification : uint32_t {
 enum class Stmt : uint32_t
 {
     // ======== ACCOUNT STATEMENTS ==========
-    AUTH_SEL_ACCOUNT_EXISTS, // Statement to check if an account exists
-    AUTH_INS_ACCOUNT, //Statement to Insert a new account
-    AUTH_GET_ACCOUNT_USERNAME, //Statement to get an account via USERNAME
+    AUTH_SEL_ACCOUNT_EXISTS, // Statement to check if an account exists.
+    AUTH_INS_ACCOUNT, //Statement to Insert a new account.
+    AUTH_GET_ACCOUNT_USERNAME, //Statement to get an account via USERNAME.
 
     //========= CHARACTER STATEMENTS ========
 
     //Create/Delete a Character
-    CHAR_SEL_CHARACTER_EXISTS, // Statement to Check if a Character Exists.
     CHAR_INS_CHARACTER, // Statement to CREATE a New Character if none exist.
-    CHAR_DEL_CHARACTER_GUID, // Statement to DELETE a Character via GUID.
+    CHAR_SEL_CHARACTER_EXISTS, // Statement to Check if a Character Exists.
+    CHAR_DEL_CHARACTER_GUID_ACCOUNT, // Statement to DELETE a Character via GUID.
 
     //Save a character
     CHAR_SAV_CHARACTER_GUID, // Statement to SAVE the Character to the DB via GUID.
@@ -290,8 +316,9 @@ enum class Stmt : uint32_t
 
     //Retrieve Character Information
     CHAR_GET_CHARACTER_GUID, // Statement to GET Character Information
-    CHAR_GET_CHARACTER_ALL_ACCOUNT, // Statement to GET the character by ACCOUNT ID.
     CHAR_GET_CHARACTER_NAME, //Statement to GET the character by character NAME.
+    CHAR_GET_CHARACTER_ALL_ACCOUNT, // Statement to GET the character by ACCOUNT ID.
+
 
 
     //Get Character Inventory
@@ -308,16 +335,125 @@ enum class Stmt : uint32_t
     MAX
 };
 
+
+#define MAX_CHAR_NAME_LEN 50
+//Struct used to save the character
+struct SaveCharacterStruct {
+    // Database: guid (int 11)
+    uint32_t guid;
+
+    // Database: account_id (int 11)
+    uint32_t account_id;
+
+    // Database: character_name (varchar 50)
+    // Use a fixed array, NOT a pointer (char*), so the data is inside the struct
+    char character_name[MAX_CHAR_NAME_LEN];
+
+    // Database: race_id, class_id, gender (tinyint 4)
+    uint8_t race_id;
+    uint8_t class_id;
+    uint8_t gender;
+
+    // Database: level (tinyint 4)
+    uint8_t level;
+
+    // Database: xp, money, zone_id (int 11)
+    // Using 32-bit integers to match SQL 'int'
+    uint32_t xp;
+    uint32_t money;
+    uint32_t zone_id;
+
+    // Database: position_x, y, z, o (float)
+    float position_x;
+    float position_y;
+    float position_z;
+    float position_o;
+
+    // Database: transport_x, y, z, o (float)
+    float transport_x;
+    float transport_y;
+    float transport_z;
+    float transport_o;
+
+};
+
+/*-- Dumping structure for table character_gquest.character
+CREATE TABLE IF NOT EXISTS `character` (
+  `guid` int(11) DEFAULT NULL COMMENT 'global unique ID',
+  `account_id` int(11) DEFAULT NULL COMMENT 'Account ID',
+  `character_name` varchar(50) DEFAULT NULL COMMENT 'Character Name',
+  `race_id` tinyint(4) DEFAULT NULL COMMENT 'RaceID',
+  `class_id` tinyint(4) DEFAULT NULL COMMENT 'ClassID',
+  `gender` tinyint(4) DEFAULT NULL COMMENT 'GenderID 0=male 1=female',
+  `level` tinyint(4) DEFAULT NULL,
+  `xp` int(11) DEFAULT NULL COMMENT 'Experience Points',
+  `money` int(11) DEFAULT NULL COMMENT 'Represented in Copper',
+  `zone_id` int(11) DEFAULT NULL COMMENT 'zone ID of the character',
+  `position_x` float DEFAULT NULL COMMENT 'the X position of the character',
+  `position_y` float DEFAULT NULL COMMENT 'The Y Pos of the Character',
+  `position_z` float DEFAULT NULL COMMENT 'the z position of the character',
+  `position_o` float DEFAULT NULL COMMENT 'Rotation of the character, we only rotate on the yaw axis',
+  `transport_x` float DEFAULT NULL COMMENT 'transport local position',
+  `transport_y` float DEFAULT NULL COMMENT 'transport local y pos',
+  `transport_z` float DEFAULT NULL COMMENT 'transport local z pos',
+  `transport_o` float DEFAULT NULL COMMENT 'transport local rot'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='PrimaryCharacterDatabase\r\n';*/
+
+struct CreateCharacterStruct {
+
+    // Database: character_name (varchar 50)
+    // Use a fixed array, NOT a pointer (char*), so the data is inside the struct
+    std::string CharacterName;
+
+    //Class Identification
+    uint32_t prim_class_id;
+    uint32_t second_class_id;
+    uint32_t third_class_id;
+
+    //Appearence Information
+    uint32_t race_id;
+    uint32_t gender;
+    uint32_t hair_id;
+    uint32_t face_id;
+    uint32_t skin_id;
+
+    // Database: level
+    uint32_t level;
+
+    // Database: xp, money, zone_id (int 11)
+    // Using 32-bit integers to match SQL 'int'
+    uint32_t xp;
+    uint32_t money;
+    uint32_t zone_id;
+
+    // Database: position_x, y, z, o (float)
+    float position_x;
+    float position_y;
+    float position_z;
+    float position_o;
+
+    // Database: transport_x, y, z, o (float)
+    float transport_x;
+    float transport_y;
+    float transport_z;
+    float transport_o;
+};
+
 struct DBJob
 {
     //Set this to true to fire the callback. Not all Queries will require a callback i.e. Character Save
     bool bHasCallback = false;
 
+    //Struct References
+    CreateCharacterStruct CharCreateStruct;
+    SaveCharacterStruct SaveCharacterStruct;
     //StatementReference
     Stmt stmt;
 
     //Prepared Statement
     PreparedStatement params;
+
+    uint32_t SessionID;
 
     //Origination Timestamp - Server time for the creation of the job request.
     uint64_t OriginationTimestamp = 0;
@@ -326,7 +462,7 @@ struct DBJob
     uint64_t RequestHandledTimestamp = 0;
 
     //Character ID - CharacterID for the origination of the Request
-    uint32_t GUID = 0;
+    uint64_t GUID = 0;
 
     //Account ID - AccountID for the origination of the Request
     uint32_t AccountID = 0;

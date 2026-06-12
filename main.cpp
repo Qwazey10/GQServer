@@ -32,7 +32,7 @@ int main() {
 
         std::cout << " MAIN -- Starting NetworkSocketMgr...\n";
         NetworkSocketMgr::Instance().StartListening("0.0.0.0", 12345, io_context);
-        std::cout << "MAIN -- NetworkSocketMgr started successfully.\n";
+
 
         std::cout << "MAIN -- Starting World thread...\n";
         World::Instance().Start();

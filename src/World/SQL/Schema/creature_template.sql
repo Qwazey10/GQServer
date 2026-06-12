@@ -21,6 +21,7 @@ USE `content_gquest`;
 
 -- Dumping structure for table content_gquest.creature_template
 CREATE TABLE IF NOT EXISTS `creature_template` (
+  `guid` bigint(20) DEFAULT NULL,
   `creature_id` int(11) DEFAULT NULL COMMENT 'primary creature ID',
   `creature_name` varchar(50) DEFAULT NULL COMMENT 'primary creature name',
   `creature_subname` varchar(50) DEFAULT NULL COMMENT 'primary creature subname - <Minion of Darkness> etc under the creature name',

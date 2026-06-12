@@ -27,7 +27,7 @@ public:
     uint64_t GetAuthSalt() const { return m_authSalt; }
     void SetAuthSalt(uint64_t salt) { m_authSalt = salt; }
 
-
+    uint32_t GetAccountID() const {return AccountID;}
 
 private:
     void ReadHeader();
@@ -35,6 +35,8 @@ private:
 
     bool bAuthenticated = false;
     uint64_t m_authSalt = 0;
+
+    uint32_t AccountID = 0;
 
     asio::ip::tcp::socket m_socket;
     int m_playerId = -1;
