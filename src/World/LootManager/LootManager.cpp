@@ -14,6 +14,7 @@ void LootManager::Initialize() {
     std::cout << "[LootManager] Loading static loot data...\n";
 
     auto& db = DatabaseManager::Instance().GetContentPool();
+
     QueryResult lootResult = db.ForceQuery_NoParams(Stmt::WORLD_GET_ALL_LOOTTABLES);
 
     if (lootResult.Empty())
