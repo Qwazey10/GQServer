@@ -68,6 +68,8 @@ add_executable(GQuestServer
         src/World/SQL/DB/DBTypes.h
         src/World/LootManager/LootManager.cpp
         src/World/LootManager/LootManager.h
+        src/World/WorldGridManager/WorldGridManager.cpp
+        src/World/WorldGridManager/WorldGridManager.h
 
 )
 

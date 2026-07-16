@@ -1,7 +1,3 @@
-//
-// Created by michael on 4/6/26.
-//
-
 #include "World.h"
 #include "WorldSessionMgr.h"
 #include <iostream>

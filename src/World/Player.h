@@ -23,10 +23,11 @@ public:
 
     //Character Attributes
     int m_id = -1;
-    int zoneId_ = 1;
-    std::string characterName_;
+
     Position m_position;
     float CharacterYaw;
+
+    std::string characterName_;
 
 
     int level_;

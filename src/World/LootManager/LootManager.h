@@ -4,6 +4,7 @@
 
 #ifndef GQUESTSERVER_LOOTMANAGER_H
 #define GQUESTSERVER_LOOTMANAGER_H
+#include <cstdint>
 #include <string>
 #include <vector>
 

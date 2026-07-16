@@ -5,6 +5,7 @@
 #include <functional>
 #include <mysql.h>
 #include <cstdint>
+#include <cstring>
 
 struct DBField
 {
@@ -446,7 +447,7 @@ struct DBJob
 
     //Struct References
     CreateCharacterStruct CharCreateStruct;
-    SaveCharacterStruct SaveCharacterStruct;
+    SaveCharacterStruct SaveStruct;
     //StatementReference
     Stmt stmt;
 

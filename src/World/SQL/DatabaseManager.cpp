@@ -17,7 +17,7 @@ void DatabaseManager::InitDB()
     m_authPool.Start(
         DatabaseClassification::AUTH_DATABASE,
         1,
-        "192.168.1.13",
+        "127.0.0.1",
         "devgquest",
         "Apple1",
         "auth_gquest");
