@@ -66,7 +66,6 @@ void WorldGridManager::CalculatePlayerGridCoordinates()
                 //Player ZoneID is NOT the same, Update ZoneID on the player
                 //Potentially call any related change functions here later.
                 player->zoneID_ = gridID;
-
             }
         }
     }
