@@ -4,7 +4,7 @@
 #include "WorldSessionMgr.h"
 
 WorldSession::WorldSession(asio::ip::tcp::socket socket, int playerId)
-    : m_socket(std::move(socket)), m_playerId(playerId), m_player(std::make_shared<Player>(playerId)) {}
+    : m_socket(std::move(socket)), m_playerId(playerId), m_player(std::make_shared<Player>()) {}
 
 WorldSession::~WorldSession() { Disconnect(); }
 

@@ -1,9 +1,10 @@
 #include "WorldGridManager.h"
 #include <cmath>
+#include <iostream>
+
 #include "World/WorldSessionMgr.h"
 
 void WorldGridManager::Initialize() {
-
 
     m_gridCoordinates.clear();
 
@@ -28,52 +29,203 @@ void WorldGridManager::Initialize() {
             m_gridCoordinates.push_back(grid);
         }
     }
+
+    //Init Debug
+    for (const auto& grid : m_gridCoordinates)
+    {
+        std::cout
+            << "Grid "
+            << grid.grid_id
+            << " ("
+            << grid.x_coordinate
+            << ", "
+            << grid.y_coordinate
+            << ")\n";
+    }
+
+    std::cout << "=====================================\n";
+    std::cout << "World Grid Initialized\n";
+    std::cout << "Grid Count X : " << m_gridCountX << '\n';
+    std::cout << "Grid Count Y : " << m_gridCountY << '\n';
+    std::cout << "Total Grids  : " << m_gridCoordinates.size() << '\n';
+    std::cout << "=====================================\n";
+}
+
+void WorldGridManager::CalculateVisiblePlayers()
+{
+    auto sessions =
+        WorldSessionMgr::Instance().GetSessions();
+
+    for (auto& session : sessions)
+    {
+        auto player = session->GetPlayer();
+
+        if (!player)
+            continue;
+
+        std::unordered_set<int> VisiblePlayers;
+
+        auto grids =
+            GetVisibleGrids(
+                player->gridX_,
+                player->gridY_,
+                1);
+
+        for (int gridID : grids)
+        {
+            auto itr =
+                m_playersByGrid.find(gridID);
+
+            if (itr == m_playersByGrid.end())
+                continue;
+
+            for (auto& other : itr->second)
+            {
+                if (other == player)
+                    continue;
+
+                VisiblePlayers.insert(
+                    other->GetGUID());
+            }
+        }
+
+        player->SetCacheInVisibilityRange(
+            VisiblePlayers);
+    }
 }
 
 void WorldGridManager::CalculatePlayerGridCoordinates()
 {
-
-    //Because this will be run from the WorldThread, We GET sessions, not copy.
-    //No need to copy and write. Should we offload this task to a thread later,
-    //Change this to WorldSessionMgr::Instance().CopySessions and &session.
-    //You will also need to update this copy with the existing Sessions array
-    //in WorldSessionMngr.
-
     auto sessions = WorldSessionMgr::Instance().GetSessions();
 
-    for (auto session : sessions)
+    // Rebuild every world update
+    m_playersByGrid.clear();
+
+    for (auto& session : sessions)
     {
-        if (auto player = session->GetPlayer())
+        auto player = session->GetPlayer();
+
+        if (!player)
+            continue;
+
+        const Position& pos = player->GetPosition();
+
+        int32_t gridX = static_cast<int32_t>(
+            (pos.x - minCoordinate_x) / gridWidth);
+
+        int32_t gridY = static_cast<int32_t>(
+            (pos.y - minCoordinate_y) / gridHeight);
+
+        gridX = std::clamp(gridX, 0, m_gridCountX - 1);
+        gridY = std::clamp(gridY, 0, m_gridCountY - 1);
+
+        int32_t gridID = gridY * m_gridCountX + gridX;
+
+        if (player->zoneID_ != gridID)
         {
-            const Position& pos = player->GetPosition();
+            std::cout
+                << "[GRID] Player "
+                << player->GetGUID()
+                << " entered Grid "
+                << gridID
+                << '\n';
 
-            int32_t gridX = static_cast<int32_t>(
-                (pos.x - minCoordinate_x) / gridWidth);
+            player->zoneID_ = gridID;
+        }
 
-            int32_t gridY = static_cast<int32_t>(
-                (pos.y - minCoordinate_y) / gridHeight);
+        // Store this player in the lookup table
+        m_playersByGrid[gridID].push_back(player);
+    }
 
-            gridX = std::clamp(gridX, 0, m_gridCountX - 1);
-            gridY = std::clamp(gridY, 0, m_gridCountY - 1);
 
-            int32_t gridID = gridY * m_gridCountX + gridX;
+    std::cout << "\n==== Players By Grid ====\n";
 
-            //Do comparison of existing zone ID to new gridID
-            if (player->zoneID_ == gridID) {
-                //Player ZoneID is the same, Do not update
-            }
-            else {
-                //Player ZoneID is NOT the same, Update ZoneID on the player
-                //Potentially call any related change functions here later.
-                player->zoneID_ = gridID;
-            }
+    for (const auto& [grid, players] : m_playersByGrid)
+    {
+        std::cout << "Grid " << grid << ": ";
+
+        for (auto& p : players)
+        {
+            std::cout << p->GetGUID() << " ";
+        }
+
+        std::cout << '\n';
+    }
+    std::cout << "=========================\n";
+}
+
+std::vector<int32_t> WorldGridManager::GetVisibleGrids(
+    int32_t gridX,
+    int32_t gridY,
+    int32_t radius) const
+{
+    std::vector<int32_t> grids;
+
+    std::cout << "\n=== Visible Grids ===\n";
+    std::cout << "Center Grid: (" << gridX << ", " << gridY
+              << ") Radius: " << radius << "\n";
+
+    for (int32_t y = -radius; y <= radius; ++y)
+    {
+        for (int32_t x = -radius; x <= radius; ++x)
+        {
+            int32_t nx = gridX + x;
+            int32_t ny = gridY + y;
+
+            if (nx < 0 || nx >= m_gridCountX)
+                continue;
+
+            if (ny < 0 || ny >= m_gridCountY)
+                continue;
+
+            int32_t gridId = ny * m_gridCountX + nx;
+            grids.push_back(gridId);
+
+            std::cout << "Grid (" << nx << ", " << ny
+                      << ") -> ID " << gridId << '\n';
         }
     }
+
+    std::cout << "Returned " << grids.size() << " grids.\n";
+    std::cout << "=====================\n\n";
+
+    return grids;
 }
+
+
 
 void WorldGridManager::Update(float Diff) {
 
+    //Calculate which players are in which grid
     CalculatePlayerGridCoordinates();
+
+    CalculateVisiblePlayers();
 }
 
+/*std::vector<int32_t> WorldGridManager::GetVisibleGrids(
+    int32_t gridX,
+    int32_t gridY,
+    int32_t radius) const
+{
+    std::vector<int32_t> grids;
 
+    for (int32_t y = -radius; y <= radius; ++y)
+    {
+        for (int32_t x = -radius; x <= radius; ++x)
+        {
+            int32_t nx = gridX + x;
+            int32_t ny = gridY + y;
+
+            if (nx < 0 || nx >= m_gridCountX)
+                continue;
+
+            if (ny < 0 || ny >= m_gridCountY)
+                continue;
+
+            grids.push_back(ny * m_gridCountX + nx);
+        }
+    }
+
+
+    return grids;
+}*/

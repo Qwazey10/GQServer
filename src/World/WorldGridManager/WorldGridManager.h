@@ -1,7 +1,11 @@
 #ifndef GQUESTSERVER_WORLDGRIDMANAGER_H
 #define GQUESTSERVER_WORLDGRIDMANAGER_H
 #include <cstdint>
+#include <memory>
+#include <unordered_map>
 #include <vector>
+
+class Player;
 
 struct GridCoordinate
 {
@@ -24,10 +28,24 @@ public:
     //And assign them zone ids, each unit is 1cm, which will correlate to
     //Unreal Engine Units.
 
+    // Delete copy
+    WorldGridManager(const WorldGridManager&) = delete;
+    WorldGridManager& operator=(const WorldGridManager&) = delete;
+
+    // Instance Declaration
+    static WorldGridManager& Instance() {
+        static WorldGridManager instance;
+        return instance;
+    }
+    WorldGridManager() = default;
+
+    
     void Initialize();
 
-    float minCoordinate_x = 0.0f;
-    float minCoordinate_y = 0.0f;
+    void CalculateVisiblePlayers();
+
+    float minCoordinate_x = -100000.0f;
+    float minCoordinate_y = -100000.0f;
 
     float maxCoordinate_x = 100000.0f;
     float maxCoordinate_y = 100000.0f;
@@ -39,6 +57,13 @@ public:
 
     int32_t m_gridCountX = 0;
     int32_t m_gridCountY = 0;
+
+    //
+    std::unordered_map<int32_t, std::vector<std::shared_ptr<Player>>> m_playersByGrid;
+    const std::unordered_map<int32_t, std::vector<std::shared_ptr<Player>>>& GetPlayersByGrid() const
+    {
+        return m_playersByGrid;
+    }
     //So this would be a 10x10 grid on a test map size, 1cm = 1 unreal unit
     // and 1km = 100,000 cm
 
@@ -47,6 +72,9 @@ public:
     void Update(float Diff);
 
     void CalculatePlayerGridCoordinates();
+
+    std::vector<int32_t> GetVisibleGrids(int32_t gridX, int32_t gridY, int32_t radius) const;
+
 
 };
 

@@ -6,6 +6,7 @@
 #include "World/LootManager/LootManager.h"
 #include "World/Maps/MapBuilder.h"
 #include "World/TimeManager/TimeManager.h"
+#include "World/WorldGridManager/WorldGridManager.h"
 
 int main() {
     try {
@@ -29,6 +30,10 @@ int main() {
 
         std::cout << "MAIN -- Initializing LootManager...\n";
         LootManager::Instance().Initialize();
+
+        std::cout << "MAIN -- Initializing WorldGridManager...\n";
+        WorldGridManager::Instance().Initialize();
+
 
         std::cout << " MAIN -- Starting NetworkSocketMgr...\n";
         NetworkSocketMgr::Instance().StartListening("0.0.0.0", 12345, io_context);

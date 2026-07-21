@@ -8,8 +8,10 @@
 
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 struct Position {
@@ -18,11 +20,14 @@ struct Position {
 
 
 class Player {
-
 public:
 
     //Character Attributes
-    int m_id = -1;
+    int GUID = -1;
+    int playerID;
+
+    int32_t gridX_ = 0;
+    int32_t gridY_ = 0;
 
     Position m_position;
     float CharacterYaw;
@@ -52,16 +57,19 @@ public:
     int title_;
 
     int zoneID_;
+    std::vector<int32_t> visibleGrids_;
     float WorldX_;
     float  WorldY_;
     float  WorldZ_;
     std::vector<int> inventory_;
     std::vector<int> equipment_;
 
-    Player(int id) : m_id(id) {}
     const std::string GetName(){ return characterName_; }
 
-    int GetId() const { return m_id; }
+
+
+
+
     const Position& GetPosition() const { return m_position; }
     void SetPosition(float x, float y, float z) {
         m_position.x = x; m_position.y = y; m_position.z = z;
@@ -94,6 +102,10 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_inRangeMutex);
         return inRangePlayers;
+    }
+
+    int GetGUID() const {
+        return GUID;
     }
 
 private:

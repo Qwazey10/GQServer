@@ -11,6 +11,8 @@
 #include <sstream>
 #include <iomanip>
 
+#include "WorldGridManager/WorldGridManager.h"
+
 World& World::Instance() {
     static World instance;
     return instance;
@@ -114,8 +116,6 @@ void World::Run()
 }
 
 void World::RegisterOpcodeHandlers() {
-
-
     m_handlers[CMSG_UPDATE_PLAYER_LOCATION_ROTATION] = [this](auto s, auto& p) { HandleLocationRotation(s, p); };
     m_handlers[CMSG_PING] = [this](auto s, auto& p) { Handle_CMSG_PING(s, p);};
 
@@ -147,8 +147,10 @@ void World::Update()
     // WORLD SYSTEMS
     //
 
+    WorldGridManager::Instance().Update(100.0f);
     //Calculate O(n2) Player Visibility Range
-    CalculateInVisibleRange_Players();
+
+    //CalculateInVisibleRange_Players();
 
     // Spawn / Despawn visibility updates
     SendPlayerEntityUpdates();
@@ -363,7 +365,51 @@ void World::Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket 
     WorldSessionMgr::Instance().SendPacketToSession(session, Newpkt);
 }
 
+/*void World::CalculateInVisibleRange_Players()
+{
+    auto sessions = WorldSessionMgr::Instance().CopySessions();
 
+    const auto& PlayersByGrid =
+        WorldGridManager::Instance().GetPlayersByGrid();
+
+    for (auto& session : sessions)
+    {
+        auto player = session->GetPlayer();
+
+        if (!player)
+            continue;
+
+        std::unordered_set<int> NewVisibleSet;
+
+        //
+        // Look at every neighboring grid
+        //
+        auto VisibleGrids =
+            WorldGridManager::Instance().GetVisibleGrids(
+                player->gridX_,
+                player->gridY_,
+                1);
+
+        for (int gridID : VisibleGrids)
+        {
+            auto itr = PlayersByGrid.find(gridID);
+
+            if (itr == PlayersByGrid.end())
+                continue;
+
+            for (auto& otherPlayer : itr->second)
+            {
+                if (otherPlayer == player)
+                    continue;
+
+                NewVisibleSet.insert(otherPlayer->GetGUID());
+            }
+        }
+
+        player->SetCacheInVisibilityRange(NewVisibleSet);
+    }
+}*/
+/*
 void World::CalculateInVisibleRange_Players() {
 
     constexpr float VISIBILITY_RANGE = 10000.0f;
@@ -393,7 +439,7 @@ void World::CalculateInVisibleRange_Players() {
             if (playerA == playerB)
                 continue;
 
-            if (playerA->zoneId_ != playerB->zoneId_)
+            if (playerA->zoneID_ != playerB->zoneID_)
                 continue;
 
             float dist =
@@ -404,13 +450,14 @@ void World::CalculateInVisibleRange_Players() {
 
             if (dist <= VISIBILITY_RANGE)
             {
-                NewVisibleSet.insert(playerB->GetId());
+                NewVisibleSet.insert(playerB->GetGUID());
             }
         }
 
         playerA->SetCacheInVisibilityRange(NewVisibleSet);
     }
 }
+*/
 
 void World::SendPlayerEntityUpdates()
 {
@@ -561,7 +608,7 @@ void World::Send_SMSG_PLAYER_ENTITY_SPAWN(
 {
     WorldPacket spawn(SMSG_PLAYER_ENTITY_SPAWN);
 
-    spawn << targetPlayer->GetId()
+    spawn << targetPlayer->GetGUID()
         << targetPlayer->GetName()
         << targetPlayer->GetPosition().x
         << targetPlayer->GetPosition().y
@@ -575,7 +622,7 @@ void World::Send_SMSG_PLAYER_ENTITY_SPAWN(
 void World::Send_SMSG_PLAYER_ENTITY_DESPAWN(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer)
 {
 
-    int TargetPlayerID = targetPlayer->GetId();
+    int TargetPlayerID = targetPlayer->GetGUID();
     WorldPacket despawn(SMSG_PLAYER_ENTITY_DESPAWN);
     despawn << TargetPlayerID;
     session->SendPacket(despawn);
@@ -593,7 +640,7 @@ void World::Send_SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION(
 
     WorldPacket pkt(SMSG_UPDATE_PLAYER_ENTITY_LOCATION_ROTATION);
 
-    pkt << TargetPlayer->GetId()
+    pkt << TargetPlayer->GetGUID()
         << TargetPlayer->GetName()
         << TargetPlayer->GetPosition().x
         << TargetPlayer->GetPosition().y
