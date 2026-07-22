@@ -63,6 +63,9 @@ void NetworkSocketMgr::DoAccept()
               try
               {
                   auto session = std::make_shared<WorldSession>(std::move(*socket), playerId);
+                  //Delete this later perhaps, manually assigning playerid/guid as no system yet exists
+                  //grid system is asking for the information
+                  session->m_player->GUID = playerId;
                   session->Start();
                   WorldSessionMgr::Instance().AddSession(session);
 

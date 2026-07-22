@@ -1,7 +1,6 @@
 #include "WorldGridManager.h"
 #include <cmath>
 #include <iostream>
-
 #include "World/WorldSessionMgr.h"
 
 void WorldGridManager::Initialize() {
@@ -53,105 +52,67 @@ void WorldGridManager::Initialize() {
 
 void WorldGridManager::CalculateVisiblePlayers()
 {
-    auto sessions =
-        WorldSessionMgr::Instance().GetSessions();
+    auto sessions = WorldSessionMgr::Instance().GetSessions();
 
     for (auto& session : sessions)
     {
         auto player = session->GetPlayer();
+        if (!player) continue;
 
-        if (!player)
-            continue;
+        // 1. Shift current state to previous state
+        player->previousVisiblePlayers_ = std::move(player->currentVisiblePlayers_);
+        player->currentVisiblePlayers_.clear();
 
-        std::unordered_set<int> VisiblePlayers;
-
-        auto grids =
-            GetVisibleGrids(
-                player->gridX_,
-                player->gridY_,
-                1);
-
-        for (int gridID : grids)
+        // 2. Build new current state based on visible grids
+        for (int32_t gridID : player->visibleGrids_)
         {
-            auto itr =
-                m_playersByGrid.find(gridID);
-
-            if (itr == m_playersByGrid.end())
-                continue;
+            auto itr = m_playersByGrid.find(gridID);
+            if (itr == m_playersByGrid.end()) continue;
 
             for (auto& other : itr->second)
             {
-                if (other == player)
-                    continue;
+                // Don't add ourselves
+                if (other == player) continue;
 
-                VisiblePlayers.insert(
-                    other->GetGUID());
+                player->currentVisiblePlayers_.insert(other->GetGUID());
             }
         }
-
-        player->SetCacheInVisibilityRange(
-            VisiblePlayers);
     }
 }
 
 void WorldGridManager::CalculatePlayerGridCoordinates()
 {
     auto sessions = WorldSessionMgr::Instance().GetSessions();
-
-    // Rebuild every world update
     m_playersByGrid.clear();
 
     for (auto& session : sessions)
     {
         auto player = session->GetPlayer();
-
-        if (!player)
-            continue;
+        if (!player) continue;
 
         const Position& pos = player->GetPosition();
 
-        int32_t gridX = static_cast<int32_t>(
-            (pos.x - minCoordinate_x) / gridWidth);
-
-        int32_t gridY = static_cast<int32_t>(
-            (pos.y - minCoordinate_y) / gridHeight);
+        int32_t gridX = static_cast<int32_t>((pos.x - minCoordinate_x) / gridWidth);
+        int32_t gridY = static_cast<int32_t>((pos.y - minCoordinate_y) / gridHeight);
 
         gridX = std::clamp(gridX, 0, m_gridCountX - 1);
         gridY = std::clamp(gridY, 0, m_gridCountY - 1);
+
+        // FIX: Store these on the player so CalculateVisiblePlayers can use them
+        player->gridX_ = gridX;
+        player->gridY_ = gridY;
 
         int32_t gridID = gridY * m_gridCountX + gridX;
 
         if (player->zoneID_ != gridID)
         {
-            std::cout
-                << "[GRID] Player "
-                << player->GetGUID()
-                << " entered Grid "
-                << gridID
-                << '\n';
-
             player->zoneID_ = gridID;
+            // Radius 1 = 9 grids total (center + 8 surrounding)
+            player->visibleGrids_ = GetVisibleGrids(gridX, gridY, 1);
         }
 
-        // Store this player in the lookup table
         m_playersByGrid[gridID].push_back(player);
     }
-
-
-    std::cout << "\n==== Players By Grid ====\n";
-
-    for (const auto& [grid, players] : m_playersByGrid)
-    {
-        std::cout << "Grid " << grid << ": ";
-
-        for (auto& p : players)
-        {
-            std::cout << p->GetGUID() << " ";
-        }
-
-        std::cout << '\n';
-    }
-    std::cout << "=========================\n";
 }
 
 std::vector<int32_t> WorldGridManager::GetVisibleGrids(
@@ -199,6 +160,7 @@ void WorldGridManager::Update(float Diff) {
     //Calculate which players are in which grid
     CalculatePlayerGridCoordinates();
 
+    //Calculate Visible Players
     CalculateVisiblePlayers();
 }
 
@@ -229,3 +191,20 @@ void WorldGridManager::Update(float Diff) {
 
     return grids;
 }*/
+
+
+//debug for calculate player grid coordinates
+/*std::cout << "\n==== Players By Grid ====\n";
+
+for (const auto& [grid, players] : m_playersByGrid)
+{
+    std::cout << "Grid " << grid << ": ";
+
+    for (auto& p : players)
+    {
+        std::cout << p->GetGUID() << " ";
+    }
+
+    std::cout << '\n';
+}
+std::cout << "=========================\n";*/

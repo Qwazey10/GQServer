@@ -58,14 +58,13 @@ public:
     int32_t m_gridCountX = 0;
     int32_t m_gridCountY = 0;
 
-    //
+
     std::unordered_map<int32_t, std::vector<std::shared_ptr<Player>>> m_playersByGrid;
     const std::unordered_map<int32_t, std::vector<std::shared_ptr<Player>>>& GetPlayersByGrid() const
     {
         return m_playersByGrid;
     }
-    //So this would be a 10x10 grid on a test map size, 1cm = 1 unreal unit
-    // and 1km = 100,000 cm
+
 
     //Update Function that will be called from the world thread that will update
     //The Grid coordinates

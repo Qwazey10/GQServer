@@ -28,7 +28,8 @@ public:
     void SetAuthSalt(uint64_t salt) { m_authSalt = salt; }
 
     uint32_t GetAccountID() const {return AccountID;}
-
+    int m_playerId = -1;
+    std::shared_ptr<Player> m_player;
 private:
     void ReadHeader();
     void ReadPayload(uint16_t payloadSize);
@@ -39,8 +40,7 @@ private:
     uint32_t AccountID = 0;
 
     asio::ip::tcp::socket m_socket;
-    int m_playerId = -1;
-    std::shared_ptr<Player> m_player;
+
 
     std::array<uint8_t, 4> m_headerBuf{}; // payloadSize(2) + opcode(2)
     std::vector<uint8_t> m_payloadBuf;

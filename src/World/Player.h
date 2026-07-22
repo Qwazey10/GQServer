@@ -24,10 +24,9 @@ public:
 
     //Character Attributes
     int GUID = -1;
+    int m_id = -1;
     int playerID;
 
-    int32_t gridX_ = 0;
-    int32_t gridY_ = 0;
 
     Position m_position;
     float CharacterYaw;
@@ -56,11 +55,24 @@ public:
     int gender_;
     int title_;
 
-    int zoneID_;
-    std::vector<int32_t> visibleGrids_;
+
     float WorldX_;
     float  WorldY_;
     float  WorldZ_;
+
+    // Grid coordinates
+    int32_t gridX_ = -1;
+    int32_t gridY_ = -1;
+    int32_t zoneID_ = -1;
+
+    // Visibility caching
+    std::vector<int32_t> visibleGrids_;
+
+    // Store last tick and current tick to calculate delta (enter/leave)
+    std::unordered_set<int32_t> previousVisiblePlayers_;
+    std::unordered_set<int32_t> currentVisiblePlayers_;
+
+    //
     std::vector<int> inventory_;
     std::vector<int> equipment_;
 

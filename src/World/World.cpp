@@ -153,7 +153,7 @@ void World::Update()
     //CalculateInVisibleRange_Players();
 
     // Spawn / Despawn visibility updates
-    SendPlayerEntityUpdates();
+    SendPlayerUpdates();
 
     // Movement replication
     SendMovementUpdates();
@@ -365,229 +365,63 @@ void World::Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket 
     WorldSessionMgr::Instance().SendPacketToSession(session, Newpkt);
 }
 
-/*void World::CalculateInVisibleRange_Players()
+void World::SendPlayerUpdates()
 {
-    auto sessions = WorldSessionMgr::Instance().CopySessions();
-
-    const auto& PlayersByGrid =
-        WorldGridManager::Instance().GetPlayersByGrid();
+    auto sessions = WorldSessionMgr::Instance().GetSessions();
 
     for (auto& session : sessions)
     {
         auto player = session->GetPlayer();
+        if (!player) continue;
 
-        if (!player)
-            continue;
-
-        std::unordered_set<int> NewVisibleSet;
-
-        //
-        // Look at every neighboring grid
-        //
-        auto VisibleGrids =
-            WorldGridManager::Instance().GetVisibleGrids(
-                player->gridX_,
-                player->gridY_,
-                1);
-
-        for (int gridID : VisibleGrids)
+        // DESPAWNS: Players who were in previousVisible, but are NOT in currentVisible
+        for (int32_t oldGUID : player->previousVisiblePlayers_)
         {
-            auto itr = PlayersByGrid.find(gridID);
-
-            if (itr == PlayersByGrid.end())
-                continue;
-
-            for (auto& otherPlayer : itr->second)
+            if (player->currentVisiblePlayers_.find(oldGUID) == player->currentVisiblePlayers_.end())
             {
-                if (otherPlayer == player)
-                    continue;
-
-                NewVisibleSet.insert(otherPlayer->GetGUID());
+                auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerID(oldGUID);
+                if (targetSession && targetSession->GetPlayer())
+                {
+                    Send_SMSG_PLAYER_ENTITY_DESPAWN(session, targetSession->GetPlayer());
+                }
             }
         }
 
-        player->SetCacheInVisibilityRange(NewVisibleSet);
-    }
-}*/
-/*
-void World::CalculateInVisibleRange_Players() {
-
-    constexpr float VISIBILITY_RANGE = 10000.0f;
-
-    auto sessionsCopy = WorldSessionMgr::Instance().CopySessions();
-
-    std::vector<std::shared_ptr<Player>> players;
-
-    players.reserve(sessionsCopy.size());
-
-    for (auto& session : sessionsCopy)
-    {
-        auto player = session->GetPlayer();
-
-        if (player)
+        // SPAWNS: Players who are in currentVisible, but were NOT in previousVisible
+        for (int32_t newGUID : player->currentVisiblePlayers_)
         {
-            players.push_back(player);
-        }
-    }
-
-    for (auto& playerA : players)
-    {
-        std::unordered_set<int> NewVisibleSet;
-
-        for (auto& playerB : players)
-        {
-            if (playerA == playerB)
-                continue;
-
-            if (playerA->zoneID_ != playerB->zoneID_)
-                continue;
-
-            float dist =
-                Distance(
-                    playerA->GetPosition(),
-                    playerB->GetPosition()
-                );
-
-            if (dist <= VISIBILITY_RANGE)
+            if (player->previousVisiblePlayers_.find(newGUID) == player->previousVisiblePlayers_.end())
             {
-                NewVisibleSet.insert(playerB->GetGUID());
+                auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerID(newGUID);
+                if (targetSession && targetSession->GetPlayer())
+                {
+                    Send_SMSG_PLAYER_ENTITY_SPAWN(session, targetSession->GetPlayer());
+                }
             }
         }
-
-        playerA->SetCacheInVisibilityRange(NewVisibleSet);
-    }
-}
-*/
-
-void World::SendPlayerEntityUpdates()
-{
-    auto sessions = WorldSessionMgr::Instance().CopySessions();
-
-    for (auto& session : sessions)
-    {
-        if (!session)
-            continue;
-
-        auto player = session->GetPlayer();
-
-        if (!player)
-            continue;
-
-        // Copy sets safely
-        auto CurrentSet = player->GetInVisibilityRange();
-        auto CacheSet = player->GetCacheInVisibilityRange();
-
-        //
-        // ENTERED RANGE
-        //
-        for (int id : CacheSet)
-        {
-            if (!CurrentSet.count(id))
-            {
-                auto targetSession =
-                    WorldSessionMgr::Instance().GetSessionByPlayerID(id);
-
-                if (!targetSession)
-                    continue;
-
-                auto targetPlayer = targetSession->GetPlayer();
-
-                if (!targetPlayer)
-                    continue;
-
-                Send_SMSG_PLAYER_ENTITY_SPAWN(
-                    session,
-                    targetPlayer
-                );
-            }
-        }
-
-        //
-        // LEFT RANGE
-        //
-        for (int id : CurrentSet)
-        {
-            if (!CacheSet.count(id))
-            {
-                auto targetSession =
-                    WorldSessionMgr::Instance().GetSessionByPlayerID(id);
-
-                if (!targetSession)
-                    continue;
-
-                auto targetPlayer = targetSession->GetPlayer();
-
-                if (!targetPlayer)
-                    continue;
-
-                Send_SMSG_PLAYER_ENTITY_DESPAWN(
-                    session,
-                    targetPlayer
-                );
-            }
-        }
-        //
-        // COMMIT CACHE -> ACTIVE
-        //
-        player->SetInVisibilityRange(CacheSet);
     }
 }
 
 void World::SendMovementUpdates()
 {
-    auto SessionsCopy = WorldSessionMgr::Instance().CopySessions();
+    auto sessions = WorldSessionMgr::Instance().GetSessions();
 
-    for (auto& session : SessionsCopy)
+    for (auto& session : sessions)
     {
-        if (!session)
-        {
-            continue;
-        }
-
         auto player = session->GetPlayer();
+        if (!player) continue;
 
-        if (!player)
+        for (int32_t visibleGUID : player->currentVisiblePlayers_)
         {
-            continue;
-        }
+            auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerID(visibleGUID);
+            if (!targetSession || !targetSession->GetPlayer()) continue;
 
-        // Copy visible player IDs
-        auto VisibilitySet = player->GetInVisibilityRange();
-
-        //
-        // Send movement updates for all visible players
-        //
-        for (int VisiblePlayerId : VisibilitySet)
-        {
-            auto targetSession =
-                WorldSessionMgr::Instance().GetSessionByPlayerID(
-                    VisiblePlayerId
-                );
-
-            if (!targetSession)
-            {
-                continue;
-            }
-
-            auto targetPlayer = targetSession->GetPlayer();
-
-            if (!targetPlayer)
-            {
-                continue;
-            }
-
-            //
-            // Optional optimization:
-            // only send if target player moved
-            //
-            // if (!targetPlayer->HasMovementChanged())
-            // {
-            //     continue;
-            // }
+            // Optional: You could add a check here to ensure the target actually moved
+            // before sending a packet to save bandwidth.
 
             Send_SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION(
                 session,
-                targetPlayer
+                targetSession->GetPlayer()
             );
         }
     }
