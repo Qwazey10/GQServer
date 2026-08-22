@@ -6,7 +6,6 @@
 #include <mutex>
 #include <unordered_map>
 #include <functional>
-
 #include "Map.h"
 #include "Packets/WorldPacket.h"
 #include "WorldSession.h"
@@ -67,6 +66,9 @@ private:
     void Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
     void Handle_CMSG_AUTH(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
     void Handle_CMSG_AUTH_CHALLENGE(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+
+    void Handle_CMSG_AUTOATTACK_ON(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+    void Handle_CMSG_AUTOATTACK_OFF(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
 
 
     //Send SMSG Functions

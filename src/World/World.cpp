@@ -121,9 +121,10 @@ void World::RegisterOpcodeHandlers() {
 
     m_handlers[CMSG_AUTH] = [this](auto s, auto& p) { Handle_CMSG_AUTH(s, p);};
     m_handlers[CMSG_AUTH_CHALLENGE] = [this](auto s, auto& p) {Handle_CMSG_AUTH_CHALLENGE(s, p);};
+
+    m_handlers[CMSG_PLAYER_AUTOATTACK_ON] = [this](auto s, auto& p) {Handle_CMSG_AUTOATTACK_ON(s, p);};
+    m_handlers[CMSG_PLAYER_AUTOATTACK_OFF] = [this](auto s, auto& p) {Handle_CMSG_AUTOATTACK_OFF(s, p);};
 }
-
-
 
 void World::Update()
 {
@@ -364,6 +365,32 @@ void World::Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket 
     WorldPacket Newpkt(SMSG_PONG);
     WorldSessionMgr::Instance().SendPacketToSession(session, Newpkt);
 }
+
+void World::Handle_CMSG_AUTOATTACK_ON(std::shared_ptr<WorldSession> session, WorldPacket &pkt) {
+
+    std::cout <<" auto attack on message recieved MESSAGE RECIEVED\n";
+
+    WorldPacket AtkOn(SMSG_PLAYER_AUTOATTACK_ON);
+
+    /*spawn << targetPlayer->GetGUID()
+        << targetPlayer->GetName()
+        << targetPlayer->GetPosition().x
+        << targetPlayer->GetPosition().y
+        << targetPlayer->GetPosition().z
+        << targetPlayer->GetRotation(); //Character Yaw*/
+
+    session->SendPacket(AtkOn);
+}
+
+void World::Handle_CMSG_AUTOATTACK_OFF(std::shared_ptr<WorldSession> session, WorldPacket &pkt) {
+
+    std::cout <<"AUTO ATTACK OFF MESSAGE RECIEVED\n";
+
+    WorldPacket AtkOff(SMSG_PLAYER_AUTOATTACK_OFF);
+
+    session->SendPacket(AtkOff);
+}
+
 
 void World::SendPlayerUpdates()
 {
