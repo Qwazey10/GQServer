@@ -476,13 +476,11 @@ void World::Send_SMSG_PLAYER_ENTITY_SPAWN(
         << targetPlayer->GetPosition().z
         << targetPlayer->GetRotation(); //Character Yaw
 
-
     session->SendPacket(spawn);
 }
 
 void World::Send_SMSG_PLAYER_ENTITY_DESPAWN(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer)
 {
-
     int TargetPlayerID = targetPlayer->GetGUID();
     WorldPacket despawn(SMSG_PLAYER_ENTITY_DESPAWN);
     despawn << TargetPlayerID;
