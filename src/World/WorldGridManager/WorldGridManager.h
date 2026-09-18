@@ -59,8 +59,8 @@ public:
     int32_t m_gridCountY = 0;
 
 
-    std::unordered_map<int32_t, std::vector<std::shared_ptr<Player>>> m_playersByGrid;
-    const std::unordered_map<int32_t, std::vector<std::shared_ptr<Player>>>& GetPlayersByGrid() const
+    std::unordered_map<int64_t, std::vector<std::shared_ptr<Player>>> m_playersByGrid;
+    const std::unordered_map<int64_t, std::vector<std::shared_ptr<Player>>>& GetPlayersByGrid() const
     {
         return m_playersByGrid;
     }

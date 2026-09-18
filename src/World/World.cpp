@@ -122,8 +122,9 @@ void World::RegisterOpcodeHandlers() {
     m_handlers[CMSG_AUTH] = [this](auto s, auto& p) { Handle_CMSG_AUTH(s, p);};
     m_handlers[CMSG_AUTH_CHALLENGE] = [this](auto s, auto& p) {Handle_CMSG_AUTH_CHALLENGE(s, p);};
 
-    m_handlers[CMSG_PLAYER_AUTOATTACK_ON] = [this](auto s, auto& p) {Handle_CMSG_AUTOATTACK_ON(s, p);};
-    m_handlers[CMSG_PLAYER_AUTOATTACK_OFF] = [this](auto s, auto& p) {Handle_CMSG_AUTOATTACK_OFF(s, p);};
+    m_handlers[CMSG_PLAYER_REQUEST_AUTOATTACK_TOGGLE] = [this](auto s, auto& p) {Handle_CMSG_PLAYER_REQUEST_AUTOATTACK_TOGGLE(s, p);};
+
+    m_handlers[CMSG_PLAYER_TARGET_REQUEST] = [this](auto s, auto& p) {Handle_CMSG_PLAYER_TARGET_REQUEST(s, p);};
 }
 
 void World::Update()
@@ -352,8 +353,6 @@ void World::HandleLocationRotation(std::shared_ptr<WorldSession> session, WorldP
     session->GetPlayer()->SetPosition(x, y, z);
     session->GetPlayer()->SetRotation(yaw);
 
-
-
     /*std::cout << "[World] Player " << session->GetPlayerId()
         << " moved to (" << x << ", " << y << ", " << z << ")"
         " Rotation (" << yaw  << ")\n";*/
@@ -366,11 +365,14 @@ void World::Handle_CMSG_PING(std::shared_ptr<WorldSession> session, WorldPacket 
     WorldSessionMgr::Instance().SendPacketToSession(session, Newpkt);
 }
 
-void World::Handle_CMSG_AUTOATTACK_ON(std::shared_ptr<WorldSession> session, WorldPacket &pkt) {
 
-    std::cout <<" auto attack on message recieved MESSAGE RECIEVED\n";
+void World::Handle_CMSG_PLAYER_REQUEST_AUTOATTACK_TOGGLE(std::shared_ptr<WorldSession> session, WorldPacket &pkt) {
+
+    std::cout <<"AUTO ATTACK OFF MESSAGE RECIEVED\n";
 
     WorldPacket AtkOn(SMSG_PLAYER_AUTOATTACK_ON);
+    WorldPacket AtkOff(SMSG_PLAYER_AUTOATTACK_OFF);
+
 
     /*spawn << targetPlayer->GetGUID()
         << targetPlayer->GetName()
@@ -378,19 +380,53 @@ void World::Handle_CMSG_AUTOATTACK_ON(std::shared_ptr<WorldSession> session, Wor
         << targetPlayer->GetPosition().y
         << targetPlayer->GetPosition().z
         << targetPlayer->GetRotation(); //Character Yaw*/
+    if (session) {
+        auto PlayerRef = session->GetPlayer();
 
-    session->SendPacket(AtkOn);
+        if (PlayerRef) {
+
+            //Player is Not attacking, send Atk On PAcket and set attack to 1
+            if (PlayerRef->AttackState == 0) {
+
+                PlayerRef->AttackState = 1;
+                session->SendPacket(AtkOn);
+                return;
+            }
+
+            //Player is Attacking, send AtkOff Packet and set attack to 0
+            if (PlayerRef->AttackState == 1) {
+
+                PlayerRef->AttackState = 0;
+                session->SendPacket(AtkOff);
+                return;
+            }
+        }
+
+    }
+
 }
 
-void World::Handle_CMSG_AUTOATTACK_OFF(std::shared_ptr<WorldSession> session, WorldPacket &pkt) {
+void World::Handle_CMSG_PLAYER_TARGET_REQUEST(std::shared_ptr<WorldSession> session, WorldPacket &pkt) {
+    //check if target is within existing grids
 
-    std::cout <<"AUTO ATTACK OFF MESSAGE RECIEVED\n";
+    int64_t GUID = 0;
 
-    WorldPacket AtkOff(SMSG_PLAYER_AUTOATTACK_OFF);
+    pkt >> GUID;
 
-    session->SendPacket(AtkOff);
+    std::cout << "[Player] Target Request received GUID " << GUID << "\n";
+    if (session->m_player) {
+        //TODO - Check if the player ID is inside the visible grid.
+    }
+    WorldPacket sndpkt(SMSG_PLAYER_TARGET_REQUEST);
+
+    // if we approve the packet, send the requested target back, right now we just auto approve.
+
+    sndpkt << GUID;
+
+    std::cout << "[Player] Target Request Sent " << GUID << "\n";
+
+    session->SendPacket(sndpkt);
 }
-
 
 void World::SendPlayerUpdates()
 {
@@ -485,7 +521,6 @@ void World::Send_SMSG_PLAYER_ENTITY_DESPAWN(std::shared_ptr<WorldSession> sessio
     WorldPacket despawn(SMSG_PLAYER_ENTITY_DESPAWN);
     despawn << TargetPlayerID;
     session->SendPacket(despawn);
-
 }
 
 void World::Send_SMSG_UPDATE_PLAYER_CREATURE_LOCATION_ROTATION(

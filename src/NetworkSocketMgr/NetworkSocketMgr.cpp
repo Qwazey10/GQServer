@@ -57,8 +57,8 @@ void NetworkSocketMgr::DoAccept()
       {
           if (!ec)
           {
-              static int nextPlayerId = 1;
-              int playerId = nextPlayerId++;
+              static int64_t nextPlayerId = 1;
+              int64_t playerId = nextPlayerId++;
 
               try
               {

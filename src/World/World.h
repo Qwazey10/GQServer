@@ -67,8 +67,10 @@ private:
     void Handle_CMSG_AUTH(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
     void Handle_CMSG_AUTH_CHALLENGE(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
 
-    void Handle_CMSG_AUTOATTACK_ON(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
-    void Handle_CMSG_AUTOATTACK_OFF(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+
+    void Handle_CMSG_PLAYER_REQUEST_AUTOATTACK_TOGGLE(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+
+    void Handle_CMSG_PLAYER_TARGET_REQUEST(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
 
 
     //Send SMSG Functions

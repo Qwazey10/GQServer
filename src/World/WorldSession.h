@@ -7,18 +7,22 @@
 #include "Player.h"
 #include "Recast.h"
 #include "Packets/WorldPacket.h"
+
 constexpr uint16_t MAX_PACKET_SIZE = 8192; // 8KB sanity limit
 
 class WorldSession : public std::enable_shared_from_this<WorldSession> {
 public:
-    explicit WorldSession(asio::ip::tcp::socket socket, int playerId);
+    //explicit WorldSession(asio::ip::tcp::socket socket, int playerId);
+
+    WorldSession(asio::ip::tcp::socket socket, int64_t playerId);
+
     ~WorldSession();
 
     void Start();
     void SendPacket(const WorldPacket& pkt);
     void Disconnect();
 
-    int GetPlayerId() const { return m_playerId; }
+    int GetPlayerId() const { return PlayerGUID; }
     std::shared_ptr<Player> GetPlayer() { return m_player; }
 
     bool IsAuthenticated() const { return bAuthenticated; }
@@ -28,8 +32,9 @@ public:
     void SetAuthSalt(uint64_t salt) { m_authSalt = salt; }
 
     uint32_t GetAccountID() const {return AccountID;}
-    int m_playerId = -1;
+    int64_t PlayerGUID = -1;
     std::shared_ptr<Player> m_player;
+
 private:
     void ReadHeader();
     void ReadPayload(uint16_t payloadSize);

@@ -3,8 +3,8 @@
 #include <iostream>
 #include "WorldSessionMgr.h"
 
-WorldSession::WorldSession(asio::ip::tcp::socket socket, int playerId)
-    : m_socket(std::move(socket)), m_playerId(playerId), m_player(std::make_shared<Player>()) {}
+WorldSession::WorldSession(asio::ip::tcp::socket socket, int64_t playerId)
+    : m_socket(std::move(socket)), PlayerGUID(playerId), m_player(std::make_shared<Player>()) {}
 
 WorldSession::~WorldSession() { Disconnect(); }
 
@@ -35,7 +35,7 @@ void WorldSession::ReadHeader()
             // 🚨 sanity check (VERY IMPORTANT)
             if (payloadSize > MAX_PACKET_SIZE)
             {
-                std::cout << "[Session " << self->m_playerId << "] Invalid packet size: " << payloadSize << "\n";
+                std::cout << "[Session " << self->PlayerGUID << "] Invalid packet size: " << payloadSize << "\n";
                 self->Disconnect();
                 return;
             }
@@ -90,7 +90,7 @@ void WorldSession::Disconnect() {
         asio::error_code ec;
         m_socket.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
         m_socket.close(ec);
-        std::cout << "[Session " << m_playerId << "] Disconnected\n";
-        WorldSessionMgr::Instance().RemoveSessionByPlayerID(m_playerId);
+        std::cout << "[Session " << PlayerGUID << "] Disconnected\n";
+        WorldSessionMgr::Instance().RemoveSessionByPlayerID(PlayerGUID);
     }
 }

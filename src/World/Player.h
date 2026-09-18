@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
 struct Position {
     float x = 0.0f, y = 0.0f, z = 0.0f;
 };
@@ -23,10 +24,13 @@ class Player {
 public:
 
     //Character Attributes
-    int GUID = -1;
-    int m_id = -1;
-    int playerID;
+    int64_t GUID = -1;
+    
+    //Attack States
+    // 0 - Not Auto Attacking.
+    // 1 - Auto Attack is Active.
 
+    int32_t AttackState;
 
     Position m_position;
     float CharacterYaw;
@@ -116,7 +120,7 @@ public:
         return inRangePlayers;
     }
 
-    int GetGUID() const {
+    int64_t GetGUID() const {
         return GUID;
     }
 
