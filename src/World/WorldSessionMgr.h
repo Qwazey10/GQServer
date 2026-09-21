@@ -19,7 +19,7 @@ public:
 
     std::shared_ptr<WorldSession> GetSessionBySessionID(uint32_t sessionID);
 
-    std::shared_ptr<WorldSession> GetSessionByPlayerID(int playerId);
+    std::shared_ptr<WorldSession> GetSessionByPlayerGUID(int64_t playerGUID);
 
     void SendPacketToSession(std::shared_ptr<WorldSession> session, const WorldPacket &pkt);
 

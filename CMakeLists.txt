@@ -70,6 +70,8 @@ add_executable(GQuestServer
         src/World/LootManager/LootManager.h
         src/World/WorldGridManager/WorldGridManager.cpp
         src/World/WorldGridManager/WorldGridManager.h
+        src/World/CombatManager/CombatManager.cpp
+        src/World/CombatManager/CombatManager.h
 
 )
 

@@ -32,6 +32,13 @@ public:
 
     int32_t AttackState;
 
+    //Target GUID of the current player.
+    int64_t TargetGUID;
+
+
+    float AttackTimer = 0.0f;
+    float AttackDelay = 1000.0f; // Should be one second delay.
+
     Position m_position;
     float CharacterYaw;
 
@@ -82,9 +89,16 @@ public:
 
     const std::string GetName(){ return characterName_; }
 
+    bool IsPlayerAttacking() const {
+        if (AttackState == 1) {
+            return true;
+        }
 
-
-
+        if (AttackState == 0) {
+            return false;
+        }
+        return false;
+    }
 
     const Position& GetPosition() const { return m_position; }
     void SetPosition(float x, float y, float z) {

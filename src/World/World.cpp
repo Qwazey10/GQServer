@@ -11,6 +11,7 @@
 #include <sstream>
 #include <iomanip>
 
+#include "CombatManager/CombatManager.h"
 #include "WorldGridManager/WorldGridManager.h"
 
 World& World::Instance() {
@@ -154,6 +155,8 @@ void World::Update()
 
     //CalculateInVisibleRange_Players();
 
+    //Combat Manager
+    CombatManager::Instance().Update((100.0f));
     // Spawn / Despawn visibility updates
     SendPlayerUpdates();
 
@@ -414,7 +417,11 @@ void World::Handle_CMSG_PLAYER_TARGET_REQUEST(std::shared_ptr<WorldSession> sess
     pkt >> GUID;
 
     std::cout << "[Player] Target Request received GUID " << GUID << "\n";
-    if (session->m_player) {
+
+    auto Player = session->GetPlayer();
+
+    if (Player) {
+        Player->TargetGUID = GUID;
         //TODO - Check if the player ID is inside the visible grid.
     }
     WorldPacket sndpkt(SMSG_PLAYER_TARGET_REQUEST);
@@ -442,7 +449,7 @@ void World::SendPlayerUpdates()
         {
             if (player->currentVisiblePlayers_.find(oldGUID) == player->currentVisiblePlayers_.end())
             {
-                auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerID(oldGUID);
+                auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerGUID(oldGUID);
                 if (targetSession && targetSession->GetPlayer())
                 {
                     Send_SMSG_PLAYER_ENTITY_DESPAWN(session, targetSession->GetPlayer());
@@ -455,7 +462,7 @@ void World::SendPlayerUpdates()
         {
             if (player->previousVisiblePlayers_.find(newGUID) == player->previousVisiblePlayers_.end())
             {
-                auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerID(newGUID);
+                auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerGUID(newGUID);
                 if (targetSession && targetSession->GetPlayer())
                 {
                     Send_SMSG_PLAYER_ENTITY_SPAWN(session, targetSession->GetPlayer());
@@ -476,7 +483,7 @@ void World::SendMovementUpdates()
 
         for (int32_t visibleGUID : player->currentVisiblePlayers_)
         {
-            auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerID(visibleGUID);
+            auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerGUID(visibleGUID);
             if (!targetSession || !targetSession->GetPlayer()) continue;
 
             // Optional: You could add a check here to ensure the target actually moved
