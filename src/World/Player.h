@@ -7,6 +7,7 @@
 
 
 #pragma once
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -15,9 +16,8 @@
 #include <unordered_set>
 #include <vector>
 
-struct Position {
-    float x = 0.0f, y = 0.0f, z = 0.0f;
-};
+#include "Math/vector3.h"
+
 
 
 class Player {
@@ -39,7 +39,11 @@ public:
     float AttackTimer = 0.0f;
     float AttackDelay = 1000.0f; // Should be one second delay.
 
-    Position m_position;
+    int32_t dmgMin = 15;
+    int32_t dmgMax = 30;
+
+
+    Vector3 m_position;
     float CharacterYaw;
 
     std::string characterName_;
@@ -100,7 +104,7 @@ public:
         return false;
     }
 
-    const Position& GetPosition() const { return m_position; }
+    const Vector3& GetPosition() const { return m_position; }
     void SetPosition(float x, float y, float z) {
         m_position.x = x; m_position.y = y; m_position.z = z;
     }
@@ -137,6 +141,30 @@ public:
     int64_t GetGUID() const {
         return GUID;
     }
+
+
+    //helpers
+    Vector3 GetForwardVector() const;
+    bool IsFacing(const Vector3& TargetPos, float MaxAngleDegrees = 90.0f) const;
+
+
+ /*\
+
+   vector3 GetForwardVector() const
+    {
+        const float YawRad   = Yaw   * (PI / 180.0f);
+        const float PitchRad = Pitch * (PI / 180.0f);
+
+        const float CosPitch = std::cos(PitchRad);
+
+        return Vector3{
+            CosPitch * std::cos(YawRad),
+            CosPitch * std::sin(YawRad),
+            std::sin(PitchRad)
+        };
+    }*/
+
+
 
 private:
 

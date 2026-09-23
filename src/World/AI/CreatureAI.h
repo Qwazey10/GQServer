@@ -11,13 +11,13 @@ class WorldSessionMgr;
 
 class CreatureAI {
 
-    public:
+public:
 
-        void UpdateAI(float deltaTime);
+    void UpdateAI(float deltaTime);
 
-        void GetPathTo(Position& pos);
+    void GetPathTo(Vector3& pos);
 
-    void MoveTo(Position& pos);
+    void MoveTo(Vector3& pos);
 
 
 

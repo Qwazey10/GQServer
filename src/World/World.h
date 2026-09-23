@@ -89,7 +89,7 @@ private:
    
 
 
-    float Distance(const Position& a, const Position& b)
+    float Distance(const Vector3& a, const Vector3& b)
     {
         float dx = a.x - b.x;
         float dy = a.y - b.y;

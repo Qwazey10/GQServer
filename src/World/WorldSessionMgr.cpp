@@ -66,14 +66,12 @@ void WorldSessionMgr::PingAllConnectedPlayers()
 }
 
 
-
-std::shared_ptr<WorldSession> WorldSessionMgr::GetSessionByPlayerID(int playerId) {
+std::shared_ptr<WorldSession> WorldSessionMgr::GetSessionByPlayerGUID(int64_t playerGUID) {
 
     std::vector<std::shared_ptr<WorldSession>> sessionsCopy = CopySessions();
 
-   
     for (const auto& session : sessionsCopy) {
-        if (session->GetPlayerId() == playerId) {
+        if (session->GetPlayerId() == playerGUID) {
             return session;
         }
     }

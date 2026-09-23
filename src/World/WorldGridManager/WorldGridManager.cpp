@@ -90,7 +90,7 @@ void WorldGridManager::CalculatePlayerGridCoordinates()
         auto player = session->GetPlayer();
         if (!player) continue;
 
-        const Position& pos = player->GetPosition();
+        const Vector3& pos = player->GetPosition();
 
         int32_t gridX = static_cast<int32_t>((pos.x - minCoordinate_x) / gridWidth);
         int32_t gridY = static_cast<int32_t>((pos.y - minCoordinate_y) / gridHeight);

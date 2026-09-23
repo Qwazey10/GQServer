@@ -72,6 +72,7 @@ add_executable(GQuestServer
         src/World/WorldGridManager/WorldGridManager.h
         src/World/CombatManager/CombatManager.cpp
         src/World/CombatManager/CombatManager.h
+        src/World/Math/vector3.h
 
 )
 

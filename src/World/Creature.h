@@ -8,10 +8,10 @@ class Creature {
         Creature() = default;
         ~Creature();
 
-        uint64_t id;           // unique monster GUID
-        uint32_t entry;        // template ID (for model, name, stats later)
-        Position position;
-        uint32_t zoneId;
+        uint64_t GUID = -1;           // unique monster GUID
+        uint32_t entry{};        // template ID (for model, name, stats later)
+        Vector3 position;
+        uint32_t zoneId{};
         float health = 100.0f;
         float maxHealth = 100.0f;
 
@@ -28,10 +28,10 @@ class Creature {
         int FacialHair = 1;
 
 
-        Position GetPosition() const { return position; }
-        uint64_t GetId() const { return id; }
-        uint32_t GetZoneId() const { return zoneId; }
-        uint32_t GetEntry() const { return entry; }
+        [[nodiscard]] Vector3 GetPosition() const { return position; }
+        [[nodiscard]] uint64_t GetId() const { return GUID; }
+        [[nodiscard]] uint32_t GetZoneId() const { return zoneId; }
+        [[nodiscard]] uint32_t GetEntry() const { return entry; }
 
         void UpdateAI(float deltaTime);   // simple AI stub for now
 };
