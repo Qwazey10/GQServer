@@ -30,6 +30,12 @@ public:
 
     Map* GetMap(uint32_t mapId);   // creates on demand
 
+    //Configuration
+    //Say Distance check for the say chat channel.
+    static constexpr float SAY_DISTANCE   = 2000.0f;
+    //Shout Distance check for the shout chat channel.
+    static constexpr float SHOUT_DISTANCE = 8000.0f;
+
 private:
 
     World() = default;
@@ -71,6 +77,16 @@ private:
     void Handle_CMSG_PLAYER_REQUEST_AUTOATTACK_TOGGLE(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
 
     void Handle_CMSG_PLAYER_TARGET_REQUEST(std::shared_ptr<WorldSession> session, WorldPacket& pkt);
+
+
+
+    //Handle Chat Functions
+    void Handle_CMSG_CHAT_REQUEST(std::shared_ptr<WorldSession> session, WorldPacket &pkt);
+
+    void Send_SMSG_CHAT_SAY(std::shared_ptr<WorldSession> session, const std::string &message);
+    void Send_SMSG_CHAT_SHOUT(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer, std::string message);
+    void Send_SMSG_CHAT_GUILD(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer, std::string message);
+    void Send_SMSG_CHAT_TELL(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer, std::string message);
 
 
     //Send SMSG Functions

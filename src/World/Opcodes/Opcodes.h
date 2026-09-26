@@ -6,21 +6,24 @@
 
 enum Opcodes : uint16_t {
 
+	//Debug/GM Commands
+	SMSG_DEBUG_MESSAGE = 0x0999, // Server Debug Message
+
 	//Authentication Opcode - Must be first packet sent.
 	CMSG_AUTH = 0x0001, // Authcode the client sends to request the password Hash
-	SMSG_AUTH = 0x0002, // AuthCode the server sends which will contain the Hash the client will salt. 
+	SMSG_AUTH = 0x0002, // AuthCode the server sends which will contain the Hash the client will salt.
 	SMSG_AUTH_FAIL = 0x0003, // Authcode the server sends which will tell the client the init login failed
 
 	CMSG_AUTH_CHALLENGE = 0x0004, // Auth code the client will send containing password + hash
-	SMSG_AUTH_CHALLENGE = 0x0005, // Authcode the server will send telling the client authentication was successful. 
+	SMSG_AUTH_CHALLENGE = 0x0005, // Authcode the server will send telling the client authentication was successful.
 	SMSG_AUTH_CHALLENGE_FAIL = 0x0006, // Authcode the server will send if the client authentication FAILED.
 
 	//Ping Opcodes
 	CMSG_PING = 0x0007, // OpCode the client sends regarding its ping information
-	SMSG_PONG = 0x0008, // Opcide the server sends containing server time 
+	SMSG_PONG = 0x0008, // Opcide the server sends containing server time
 
 	//Server Sync
-	SMSG_SETSERVERTIME = 0x0009, // Server Opcode sent containing the server timestamp which will be stored in the Game Instance in UE 
+	SMSG_SETSERVERTIME = 0x0009, // Server Opcode sent containing the server timestamp which will be stored in the Game Instance in UE
 
 	//Basic Combat Opcodes
 	CMSG_PLAYER_REQUEST_AUTOATTACK_TOGGLE = 0x0010, // Client Opcode that is sent by the client when the auto attack toggle is turned off.
@@ -58,17 +61,11 @@ enum Opcodes : uint16_t {
 	SMSG_OBJECT_UPDATE = 0x0027, //Opcode telling the client to update the state of a Game Object.
 
 	//Chat Opcodes
-	CMSG_CHAT_SAY = 0x0028, // Opcode for the clients chat requset
-	CMSG_CHAT_SHOUT = 0x0029, // Opcode for the client to request a shout
-	CMSG_CHAT_GUILD = 0x0030, // Opcode for the client to request a Guild Message
-	CMSG_CHAT_TELL = 0x0031, // Opcode for the client to request a tell message
+	CMSG_CHAT_REQUEST = 0x0028, // Opcode for the clients chat Request
 
-	SMSG_CHAT_SAY = 0x0032, //Opcode for reporting say messages
-	SMSG_CHAT_SHOUT = 0x0033, // Opcode for reporting relative shout messages
-	SMSG_CHAT_GUILD = 0x0034, // Opcode for reporting relative guild messages
-	SMSG_CHAT_TELL = 0x0035, // Opcode for reporting relative guild messages
-
-	SMSG_DEBUG_MESSAGE = 0x0036, //Send a Debug message to the server.
+	SMSG_CHAT_SAY = 0x0029, //Opcode for reporting say messages
+	SMSG_CHAT_SHOUT = 0x0030, // Opcode for reporting relative shout messages
+	SMSG_CHAT_GUILD = 0x0031, // Opcode for reporting relative guild messages
+	SMSG_CHAT_TELL = 0x0032, // Opcode for reporting relative guild messages
 };
-
 #endif //GQUESTSERVER_OPCODES_H

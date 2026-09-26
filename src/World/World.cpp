@@ -126,6 +126,8 @@ void World::RegisterOpcodeHandlers() {
     m_handlers[CMSG_PLAYER_REQUEST_AUTOATTACK_TOGGLE] = [this](auto s, auto& p) {Handle_CMSG_PLAYER_REQUEST_AUTOATTACK_TOGGLE(s, p);};
 
     m_handlers[CMSG_PLAYER_TARGET_REQUEST] = [this](auto s, auto& p) {Handle_CMSG_PLAYER_TARGET_REQUEST(s, p);};
+
+    m_handlers[CMSG_CHAT_REQUEST] = [this](auto s, auto& p) {Handle_CMSG_CHAT_REQUEST(s, p);};
 }
 
 void World::Update()
@@ -434,6 +436,171 @@ void World::Handle_CMSG_PLAYER_TARGET_REQUEST(std::shared_ptr<WorldSession> sess
 
     session->SendPacket(sndpkt);
 }
+
+/*
+ *CHAT HANLDERS
+ */
+void World::Handle_CMSG_CHAT_REQUEST(std::shared_ptr<WorldSession> session, WorldPacket& pkt)
+{
+    std::string raw;
+    pkt >> raw;
+
+    // Basic safety
+    if (raw.empty() || raw.length() > 255)
+        return;
+
+    auto sender = session->GetPlayer();
+    if (!sender)
+        return;
+
+    // Optional: rate-limit / spam protection here
+
+    // Trim (in case client didn't)
+    // (simple version – replace with a proper trim if you have one)
+    size_t start = raw.find_first_not_of(" \t\r\n");
+    size_t end   = raw.find_last_not_of(" \t\r\n");
+    if (start == std::string::npos)
+        return;
+    raw = raw.substr(start, end - start + 1);
+
+    // -------------------------------------------------
+    // Parse command
+    // -------------------------------------------------
+    std::string lower = raw;
+    std::transform(lower.begin(), lower.end(), lower.begin(),
+                   [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
+
+    // No slash → normal say
+    if (raw[0] != '/')
+    {
+        Send_SMSG_CHAT_SAY(session, raw);
+        return;
+    }
+
+    // Split into command + rest
+    std::string command;
+    std::string message;
+
+    size_t space = raw.find(' ');
+    if (space != std::string::npos)
+    {
+        command = lower.substr(0, space);               // already lower-cased
+        message = raw.substr(space + 1);                // keep original case
+
+        // trim leading spaces of message
+        size_t msgStart = message.find_first_not_of(" \t");
+        if (msgStart != std::string::npos)
+            message = message.substr(msgStart);
+        else
+            message.clear();
+    }
+    else
+    {
+        command = lower;                                // just "/say"
+        message.clear();
+    }
+
+    if (message.empty() && command != "/tell" /* etc. if you want pure commands */)
+        return; // nothing to say
+
+    // -------------------------------------------------
+    // Dispatch
+    // -------------------------------------------------
+    if (command == "/say" || command == "/s")
+    {
+        Send_SMSG_CHAT_SAY(session, message);
+
+    }
+    else if (command == "/shout" || command == "/y")
+    {
+       // ***** BroadcastShout(sender, message);
+    }
+    else if (command == "/guild" || command == "/g")
+    {
+        // TODO: once you have guilds
+        //  *****BroadcastGuild(sender, message);
+    }
+    else if (command == "/tell" || command == "/t" ||
+             command == "/w"    || command == "/whisper")
+    {
+        // Expect: /tell PlayerName message...
+        size_t nameSpace = message.find(' ');
+        if (nameSpace == std::string::npos)
+            return; // no target name
+
+        std::string targetName = message.substr(0, nameSpace);
+        std::string tellMsg    = message.substr(nameSpace + 1);
+
+        // trim tellMsg
+        size_t tStart = tellMsg.find_first_not_of(" \t");
+        if (tStart != std::string::npos)
+            tellMsg = tellMsg.substr(tStart);
+        else
+            return;
+
+        //****SendTell(sender, targetName, tellMsg);
+    }
+    else
+    {
+        // Unknown command – you can ignore or treat as say
+        // BroadcastSay(sender, raw);
+    }
+}
+
+void World::Send_SMSG_CHAT_SAY(std::shared_ptr<WorldSession> session,
+                               const std::string& message)
+{
+    auto Sender = session->GetPlayer();
+    if (!Sender)
+        return;
+
+    const Vector3& senderPos = Sender->GetPosition();
+
+    // Build the packet once
+    WorldPacket saypkt(SMSG_CHAT_SAY);
+    saypkt << Sender->characterName_ << message;
+
+    // Echo back to the sender
+    session->SendPacket(saypkt);
+    std::cout << "Say Message (self): " << Sender->characterName_
+              << " " << message << "\n";
+
+    // Send to nearby visible players
+    for (int32_t targetGUID : Sender->currentVisiblePlayers_)
+    {
+        auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerGUID(targetGUID);
+        if (!targetSession)
+            continue;
+
+        auto targetPlayer = targetSession->GetPlayer();
+        if (!targetPlayer)
+            continue;
+
+        float dist = Vector3::Distance(senderPos, targetPlayer->GetPosition());
+        if (dist < SAY_DISTANCE)
+        {
+            targetSession->SendPacket(saypkt);
+            std::cout << "Say Message Received: " << targetPlayer->characterName_
+                      << " " << message << "\n";
+        }
+    }
+}
+
+void World::Send_SMSG_CHAT_SHOUT(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer,
+    std::string message) {
+
+}
+
+void World::Send_SMSG_CHAT_GUILD(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer,
+    std::string message) {
+}
+
+void World::Send_SMSG_CHAT_TELL(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer,
+    std::string message) {
+}
+
+
+
 
 void World::SendPlayerUpdates()
 {

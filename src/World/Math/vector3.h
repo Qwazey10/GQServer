@@ -4,8 +4,7 @@
 #pragma once
 #include <cmath>
 
-
-//Pi def
+// Pi definition
 constexpr float PI = 3.14159265358979323846f;
 
 struct Vector3
@@ -23,7 +22,6 @@ struct Vector3
         return Vector3{ x - other.x, y - other.y, z - other.z };
     }
 
-    // Optional but useful later
     float LengthSquared() const
     {
         return x * x + y * y + z * z;
@@ -32,6 +30,29 @@ struct Vector3
     float Length() const
     {
         return std::sqrt(LengthSquared());
+    }
+
+    // Distance to another vector
+    float Distance(const Vector3& other) const
+    {
+        return (*this - other).Length();
+    }
+
+    // Static version (convenient for Vector3::Distance(a, b))
+    static float Distance(const Vector3& a, const Vector3& b)
+    {
+        return (a - b).Length();
+    }
+
+    // Optional: squared distance (cheaper when you only need to compare)
+    float DistanceSquared(const Vector3& other) const
+    {
+        return (*this - other).LengthSquared();
+    }
+
+    static float DistanceSquared(const Vector3& a, const Vector3& b)
+    {
+        return (a - b).LengthSquared();
     }
 
     Vector3 Normalized() const
@@ -50,4 +71,4 @@ struct Vector3
     }
 };
 
-#endif //GQUESTSERVER_VECTOR3_H
+#endif // GQUESTSERVER_VECTOR3_H
