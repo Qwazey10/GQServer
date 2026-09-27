@@ -513,12 +513,14 @@ void World::Handle_CMSG_CHAT_REQUEST(std::shared_ptr<WorldSession> session, Worl
     }
     else if (command == "/shout" || command == "/y")
     {
+        Send_SMSG_CHAT_SHOUT(session, message);
        // ***** BroadcastShout(sender, message);
     }
     else if (command == "/guild" || command == "/g")
     {
         // TODO: once you have guilds
         //  *****BroadcastGuild(sender, message);
+        Send_SMSG_CHAT_GUILD(session, message);
     }
     else if (command == "/tell" || command == "/t" ||
              command == "/w"    || command == "/whisper")
@@ -586,17 +588,62 @@ void World::Send_SMSG_CHAT_SAY(std::shared_ptr<WorldSession> session,
     }
 }
 
-void World::Send_SMSG_CHAT_SHOUT(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer,
-    std::string message) {
+void World::Send_SMSG_CHAT_SHOUT(std::shared_ptr<WorldSession> session, std::string message) {
+
+    auto Sender = session->GetPlayer();
+    if (!Sender)
+        return;
+
+    const Vector3& senderPos = Sender->GetPosition();
+
+    // Build the packet once
+    WorldPacket saypkt(SMSG_CHAT_SHOUT);
+    saypkt << Sender->characterName_ << message;
+
+    // Echo back to the sender
+    session->SendPacket(saypkt);
+    std::cout << "Say Message (self): " << Sender->characterName_
+              << " " << message << "\n";
+
+    // Send to nearby visible players
+    for (int32_t targetGUID : Sender->currentVisiblePlayers_)
+    {
+        auto targetSession = WorldSessionMgr::Instance().GetSessionByPlayerGUID(targetGUID);
+        if (!targetSession)
+            continue;
+
+        auto targetPlayer = targetSession->GetPlayer();
+        if (!targetPlayer)
+            continue;
+
+        float dist = Vector3::Distance(senderPos, targetPlayer->GetPosition());
+        if (dist < SAY_DISTANCE)
+        {
+            targetSession->SendPacket(saypkt);
+            std::cout << "Shout Message Received: " << targetPlayer->characterName_
+                      << " " << message << "\n";
+        }
+    }
 
 }
 
-void World::Send_SMSG_CHAT_GUILD(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer,
-    std::string message) {
+void World::Send_SMSG_CHAT_GUILD(std::shared_ptr<WorldSession> session, std::string message) {
+
+    std::cout << "GUILD Message Received: " << " " << message << "\n";
 }
 
-void World::Send_SMSG_CHAT_TELL(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer,
+void World::Send_SMSG_CHAT_TELL(std::shared_ptr<WorldSession> session, std::string targetName,
     std::string message) {
+
+    std::cout << "TELL Message Received: " << "Tell Target:" << " message "<< " <<\n";
+
+    WorldPacket tellpkt(SMSG_CHAT_TELL);
+    tellpkt << targetName << message;
+
+    if (session) {
+        session->SendPacket(tellpkt);
+    }
+
 }
 
 

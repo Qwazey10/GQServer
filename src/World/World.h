@@ -84,9 +84,9 @@ private:
     void Handle_CMSG_CHAT_REQUEST(std::shared_ptr<WorldSession> session, WorldPacket &pkt);
 
     void Send_SMSG_CHAT_SAY(std::shared_ptr<WorldSession> session, const std::string &message);
-    void Send_SMSG_CHAT_SHOUT(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer, std::string message);
-    void Send_SMSG_CHAT_GUILD(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer, std::string message);
-    void Send_SMSG_CHAT_TELL(std::shared_ptr<WorldSession> session, std::shared_ptr<Player> targetPlayer, std::string message);
+    void Send_SMSG_CHAT_SHOUT(std::shared_ptr<WorldSession> session,  std::string message);
+    void Send_SMSG_CHAT_GUILD(std::shared_ptr<WorldSession> session,  std::string message);
+    void Send_SMSG_CHAT_TELL(std::shared_ptr<WorldSession> session, std::string targetName, std::string message);
 
 
     //Send SMSG Functions
