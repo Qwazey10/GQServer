@@ -2,7 +2,6 @@
 #include "WorldSessionMgr.h"
 #include <iostream>
 #include <chrono>
-
 #include "TimeManager/TimeManager.h"
 #include "SQL/DatabaseManager.h"
 #include <random>
@@ -10,7 +9,6 @@
 #include <openssl/sha.h>
 #include <sstream>
 #include <iomanip>
-
 #include "CombatManager/CombatManager.h"
 #include "WorldGridManager/WorldGridManager.h"
 
@@ -117,6 +115,8 @@ void World::Run()
 }
 
 void World::RegisterOpcodeHandlers() {
+
+
     m_handlers[CMSG_UPDATE_PLAYER_LOCATION_ROTATION] = [this](auto s, auto& p) { HandleLocationRotation(s, p); };
     m_handlers[CMSG_PING] = [this](auto s, auto& p) { Handle_CMSG_PING(s, p);};
 
@@ -128,6 +128,7 @@ void World::RegisterOpcodeHandlers() {
     m_handlers[CMSG_PLAYER_TARGET_REQUEST] = [this](auto s, auto& p) {Handle_CMSG_PLAYER_TARGET_REQUEST(s, p);};
 
     m_handlers[CMSG_CHAT_REQUEST] = [this](auto s, auto& p) {Handle_CMSG_CHAT_REQUEST(s, p);};
+    
 }
 
 void World::Update()
@@ -406,9 +407,7 @@ void World::Handle_CMSG_PLAYER_REQUEST_AUTOATTACK_TOGGLE(std::shared_ptr<WorldSe
                 return;
             }
         }
-
     }
-
 }
 
 void World::Handle_CMSG_PLAYER_TARGET_REQUEST(std::shared_ptr<WorldSession> session, WorldPacket &pkt) {
